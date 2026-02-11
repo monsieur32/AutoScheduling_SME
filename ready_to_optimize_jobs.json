@@ -1,0 +1,34 @@
+[
+    {
+        "id": "1004240301931",
+        "quantity": 1,
+        "due_date": "2024-09-30 00:00:00",
+        "material_group": "B",
+        "processing_times": {
+            "CNCCCC0003": 1.88,
+            "CNCTNC0002": 7.5,
+            "CNCCCC0002": 1.88,
+            "CNCCCC0001": 2.22,
+            "CNCTNC0005": 7.5,
+            "CNCTNC0004": 7.5,
+            "CNCTNC0003": 7.5,
+            "CNCTNC0001": 7.5
+        }
+    },
+    {
+        "id": "1001240606311",
+        "quantity": 1,
+        "due_date": "2024-10-10 00:00:00",
+        "material_group": "B",
+        "processing_times": {
+            "CNCCCC0003": 1.82,
+            "CNCTNC0002": 10.0,
+            "CNCCCC0002": 1.82,
+            "CNCCCC0001": 2.5,
+            "CNCTNC0005": 10.0,
+            "CNCTNC0004": 10.0,
+            "CNCTNC0003": 10.0,
+            "CNCTNC0001": 10.0
+        }
+    }
+]
