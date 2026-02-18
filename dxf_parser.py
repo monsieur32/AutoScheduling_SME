@@ -4,8 +4,8 @@ import math
 
 def extract_cutting_info(dxf_path):
     """
-    Parses a DXF file to extract total cutting length and other geometry info.
-    Assumes cutting paths are on specific layers or are standard entities (LINE, ARC, POLYLINE, LWPOLYLINE, SPLINE, CIRCLE).
+    Phân tích file DXF để trích xuất tổng chiều dài cắt và thông tin hình học.
+    Giả định đường cắt nằm trên các layer cụ thể hoặc là các thực thể chuẩn (LINE, ARC, POLYLINE...).
     """
     try:
         doc = ezdxf.readfile(dxf_path)
@@ -15,7 +15,7 @@ def extract_cutting_info(dxf_path):
         curved_len = 0.0
         entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
         
-        # Iterate through entities in model space
+        # Duyệt qua các thực thể trong không gian mô hình
         for entity in msp:
             entity_type = entity.dxftype()
             
@@ -42,20 +42,15 @@ def extract_cutting_info(dxf_path):
                 entity_counts["CIRCLE"] += 1
                 
             elif entity_type == 'LWPOLYLINE':
-                # Iterate segments to check for bulges (curves)
+                # Duyệt các đoạn để kiểm tra độ phình (đường cong)
                 points = entity.get_points(format='xyb') # x, y, bulge
                 for i in range(len(points) - 1):
                     p1, p2 = points[i], points[i+1]
-                    bulge = p1[2] # bulge is at start point
+                    bulge = p1[2] # bulge nằm ở điểm bắt đầu
                     dist = math.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)
                     
                     if bulge != 0:
-                        # Calculate arc length from chord length and bulge
-                        # sagitta = bulge * (dist / 2) ... simplified:
-                        # Arc length formula from bulge: L = 4 * atan(|b|) * (chord_len / sin(4 * atan(|b|)) / 2 * radius...) 
-                        # Easier: theta = 4 * atan(abs(bulge))
-                        # radius = dist / (2 * sin(theta/2))
-                        # arc_len = radius * theta
+                        # Tính chiều dài cung từ dây cung và độ phình
                         theta = 4 * math.atan(abs(bulge))
                         radius = dist / (2 * math.sin(theta/2))
                         l = radius * theta
@@ -63,7 +58,7 @@ def extract_cutting_info(dxf_path):
                     else:
                         straight_len += dist
                 
-                # Close the loop if needed
+                # Đóng vòng lặp nếu cần
                 if entity.is_closed:
                     p1, p2 = points[-1], points[0]
                     bulge = p1[2]
@@ -79,8 +74,8 @@ def extract_cutting_info(dxf_path):
                 entity_counts["LWPOLYLINE"] += 1
 
             elif entity_type == 'POLYLINE':
-                # Simplified: treat legacy polylines as composed of linear segments for now, or check vertices
-                # Assuming mostly straight for legacy 2D polys in this specific domain context unless specified
+                # Đơn giản hóa: coi polyline cũ là các đoạn thẳng, hoặc kiểm tra đỉnh
+                # Giả định chủ yếu là thẳng cho polyline 2D cũ trừ khi có chỉ định khác
                 points = list(entity.points())
                 for i in range(len(points) - 1):
                     p1, p2 = points[i], points[i+1]
@@ -92,7 +87,7 @@ def extract_cutting_info(dxf_path):
                     straight_len += l
                 entity_counts["POLYLINE"] += 1
                 
-            # TODO: IMPL SPLINE
+            # TODO: CÀI ĐẶT SPLINE
             
         return {
             "status": "success",

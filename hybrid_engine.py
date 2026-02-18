@@ -15,47 +15,47 @@ class HybridEngine:
         
     def apply_expert_constraints(self, jobs, use_ml=True):
         """
-        Scan jobs using ML/Rule-based logic.
-        If ML predicts 'better_expert' -> Lock specific machines or add penalty.
+        Quét các job bằng Logic ML/Luật.
+        Nếu ML dự đoán 'better_expert' -> Khóa máy cụ thể hoặc thêm phạt.
         """
         adjusted_jobs = copy.deepcopy(jobs)
         log = []
         
         for job in adjusted_jobs:
-            # Prepare feature dict for ML
-            # Map real data keys to ML feature keys
+            # Chuẩn bị dữ liệu đầu vào cho ML
+            # Ánh xạ khóa dữ liệu thực sang khóa đặc trưng ML
             ml_input = {
-                "process_steps": len(job.get('operations', [])), # Example structure
+                "process_steps": len(job.get('operations', [])), # Ví dụ cấu trúc
                 "material_group": job.get('material_group', 'C'),
                 "size_mm": job.get('size_mm', 1000),
                 "dxf_complexity": job.get('complexity', 0.1)
             }
             
-            # 1. DXF Check (Hard Logic) - From previous step
+            # 1. Kiểm tra DXF (Luật Cứng) - Từ bước trước
             if job.get('complexity', 0) > 0.3:
                  job['constraints'] = ['Waterjet', 'CNC']
-                 log.append(f"Job {job['id']}: High Complexity -> Restricted to Waterjet/CNC")
-                 continue # Skip ML check if hard constraint is set
+                 log.append(f"Job {job['id']}: Dị hình phức tạp -> Giới hạn máy Waterjet/CNC")
+                 continue # Bỏ qua kiểm tra ML nếu đã có ràng buộc cứng
             
-            # 2. ML Prediction (Soft Logic)
+            # 2. Dự đoán ML (Luật Mềm)
             if use_ml:
                 prediction = self.ml.predict_adjust(ml_input)
                 
                 if prediction.get('use_expert_rule'):
-                    # Expert Strategy: For Hard Materials (I, L, K), avoid high-vibration machines
-                    # This is "Tacit Knowledge" injected back
+                    # Chiến lược chuyên gia: Với Vật liệu cứng (I, L, K), tránh máy rung mạnh
+                    # Đây là "Tri thức Ngầm" được đưa lại vào hệ thống
                     if ml_input['material_group'] in ['I', 'L', 'K']:
                         job['priority'] = 'HIGH'
-                        job['slow_mode'] = True # hypothetical flag for GA to choose slower/safer speed
-                        log.append(f"Job {job['id']}: ML Expert Rule -> Set High Priority & Smooth Mode (ROI +{prediction['predicted_roi']:.1%})")
+                        job['slow_mode'] = True # cờ giả định để GA chọn tốc độ chậm/an toàn hơn
+                        log.append(f"Job {job['id']}: Luật chuyên gia ML -> Ưu tiên Cao & Chế độ An toàn (ROI +{prediction['predicted_roi']:.1%})")
             
         return adjusted_jobs, log
 
     def find_suitable_machines(self, is_complex):
         """
-        Filter machines based on capability.
-        is_complex = True -> Requires "Cut_contour" (Waterjet/CNC)
-        is_complex = False -> Requires "Cut_straight" (Bridge Saw)
+        Lọc máy dựa trên năng lực.
+        is_complex = True -> Yêu cầu "Cut_contour" (Waterjet/CNC)
+        is_complex = False -> Yêu cầu "Cut_straight" (Cắt Cầu)
         """
         candidates = []
         required_cap = "Cut_contour" if is_complex else "Cut_straight"
@@ -68,52 +68,52 @@ class HybridEngine:
 
     def calculate_duration(self, machine_id, material_group, size_mm):
         """
-        Look up speed matrix to estimate duration.
+        Tra cứu bảng tốc độ để ước tính thời gian.
         """
         m_data = self.master_data['machines'].get(machine_id)
-        if not m_data: return 60 # Default fallback
+        if not m_data: return 60 # Mặc định dự phòng
         
-        # Determine Size Category (New Codes)
+        # Xác định nhóm kích thước (Mã mới)
         if size_mm < 200: size_cat = "LT_200"
         elif size_mm < 400: size_cat = "B200_400"
         elif size_mm < 600: size_cat = "B400_600"
         else: size_cat = "GT_600"
         
-        # Get Speed
+        # Lấy tốc độ
         speed = m_data.get('speed_matrix', {}).get(material_group, {}).get(size_cat, 500.0)
         
-        # Duration = Length / Speed
-        # Add 5 mins setup time
+        # Thời gian = Chiều dài / Tốc độ
+        # Thêm 5 phút thời gian gá đặt
         return int(size_mm / speed) + 5
 
     def run_ga_simulation(self, jobs):
         """
-        Simulate GA Scheduling with Real Data.
+        Mô phỏng Lập lịch GA với Dữ liệu Thực.
         """
         schedule = []
         machine_availability = {m: 0 for m in self.master_data['machines'].keys()}
         
-        # Sort by priority (Expert intervention effect)
+        # Sắp xếp theo ưu tiên (Tác động can thiệp chuyên gia)
         sorted_jobs = sorted(jobs, key=lambda x: 0 if x.get('priority') == 'HIGH' else 1)
         
         for job in sorted_jobs:
             is_complex = job.get('complexity', 0) > 0.1
             
-            # 1. Find Candidates
+            # 1. Tìm Ứng viên
             candidates = self.find_suitable_machines(is_complex)
             
-            # Expert Constraint: If job has specific constraints, intersect
+            # Ràng buộc Chuyên gia: Nếu job có ràng buộc cụ thể, giao thoa tập hợp
             if job.get('constraints'):
-                # Map broad categories to specific IDs if needed, or assume constraints are IDs
-                # For now, let's assume constraints are Machine Types (Waterjet/CNC)
-                # We filter candidates that strictly match "Waterjet" or "CNC" keywords in their ID/Name if we had names
-                # logic: keep candidates
+                # Ánh xạ danh mục rộng sang ID cụ thể nếu cần, hoặc giả định ràng buộc là ID
+                # Hiện tại, giả định ràng buộc là Loại Máy (Waterjet/CNC)
+                # Lọc ứng viên khớp chính xác từ khóa "Waterjet" hoặc "CNC" trong ID/Tên
+                # logic: giữ nguyên ứng viên
                 pass
             
             if not candidates:
                 candidates = ["MANUAL_FALLBACK"]
             
-            # 2. GA Selection (Greedy for MVP: Pick machine with earliest finish time)
+            # 2. Lựa chọn GA (Tham lam cho MVP: Chọn máy có thời gian hoàn thành sớm nhất)
             best_machine = None
             earliest_finish = float('inf')
             best_duration = 0
@@ -121,11 +121,11 @@ class HybridEngine:
             for m in candidates:
                 if m == "MANUAL_FALLBACK": continue
                 
-                # Calculate Duration
+                # Tính toán Thời gian
                 duration = self.calculate_duration(m, job.get('material_group', 'C'), job.get('size_mm', 1000))
                 
                 if job.get('slow_mode'):
-                    duration = int(duration * 1.5) # Slower by 50%
+                    duration = int(duration * 1.5) # Chậm hơn 50%
                 
                 start_time = machine_availability[m]
                 finish_time = start_time + duration
@@ -135,13 +135,13 @@ class HybridEngine:
                     best_machine = m
                     best_duration = duration
             
-            # Fallback
+            # Dự phòng
             if best_machine is None:
                 best_machine = "MANUAL_WORK"
                 best_duration = 120
                 earliest_finish = machine_availability.get(best_machine, 0) + 120
             
-            # 3. Schedule
+            # 3. Lên lịch
             schedule.append({
                 "job_id": job['id'],
                 "machine": best_machine,
@@ -150,7 +150,7 @@ class HybridEngine:
                 "note": "Expert Intervention" if job.get('priority') == 'HIGH' else "Standard GA"
             })
             
-            # Update machine availability
+            # Cập nhật trạng thái máy
             if best_machine in machine_availability:
                 machine_availability[best_machine] = earliest_finish
             

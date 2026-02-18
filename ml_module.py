@@ -21,29 +21,29 @@ class FJSPML:
         self.is_trained = False
 
     def load_data(self, csv_path):
-        """Loads data from CSV for training."""
+        """Tải dữ liệu từ CSV để huấn luyện."""
         if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"Data file not found: {csv_path}")
+            raise FileNotFoundError(f"Không tìm thấy file dữ liệu: {csv_path}")
         return pd.read_csv(csv_path)
 
     def preprocess(self, df, training=True):
-        """Prepares features (X) and targets (y)."""
-        # Features: Process Steps, Material Group, Size, Complexity
-        # We need to encode 'Material Group'
+        """Chuẩn bị đặc trưng (X) và mục tiêu (y)."""
+        # Đặc trưng: Bước gia công, Nhóm vật liệu, Kích thước, Độ phức tạp
+        # Cần mã hóa hóa 'Nhóm vật liệu'
         
         df_clean = df.copy()
         
         if training:
             self.le_material.fit(df_clean['material_group'])
-            # Save the encoder for inference
+            # Lưu bộ mã hóa để suy luận sau này
             joblib.dump(self.le_material, os.path.join(self.model_path, 'le_material.joblib'))
         else:
-            # Load encoder if not in training mode
+            # Tải bộ mã hóa nếu không phải chế độ huấn luyện
             self.le_material = joblib.load(os.path.join(self.model_path, 'le_material.joblib'))
             
-            # Handle unknown labels in inference (fallback to a common one like 'C')
-            # For simplicity in this demo, we assume known labels or handle error
-            # In prod, we'd use a more robust encoder
+            # Xử lý nhãn lạ khi suy luận (fallback về nhãn phổ biến như 'C')
+            # Để đơn giản trong demo này, giả định nhãn đã biết hoặc bỏ qua lỗi
+            # Trong thực tế, cần bộ mã hóa mạnh mẽ hơn
             pass
 
         df_clean['material_code'] = self.le_material.transform(df_clean['material_group'])
@@ -62,37 +62,37 @@ class FJSPML:
         return X, y_clf, y_reg
 
     def train(self, csv_path='schedule_log.csv'):
-        """Trains the Classification and Regression models."""
-        print(f"Loading data from {csv_path}...")
+        """Huấn luyện mô hình Phân loại và Hồi quy."""
+        print(f"Đang tải dữ liệu từ {csv_path}...")
         df = self.load_data(csv_path)
         
         X, y_clf, y_reg = self.preprocess(df, training=True)
         
-        # Split data
+        # Chia tách dữ liệu
         X_train, X_test, y_clf_train, y_clf_test, y_reg_train, y_reg_test = train_test_split(
             X, y_clf, y_reg, test_size=0.2, random_state=42
         )
         
-        # Train Classifier (Should we use Expert?)
-        print("Training Classifier...")
+        # Huấn luyện Phân loại (Có nên dùng Chuyên gia?)
+        print("Đang huấn luyện Bộ phân loại...")
         self.clf.fit(X_train, y_clf_train)
         acc = accuracy_score(y_clf_test, self.clf.predict(X_test))
-        print(f"-> Classifier Accuracy: {acc:.2f}")
+        print(f"-> Độ chính xác Phân loại: {acc:.2f}")
         
-        # Train Regressor (How much improvement?)
-        print("Training Regressor...")
+        # Huấn luyện Hồi quy (Cải thiện bao nhiêu?)
+        print("Đang huấn luyện Bộ hồi quy...")
         self.reg.fit(X_train, y_reg_train)
         mse = mean_squared_error(y_reg_test, self.reg.predict(X_test))
-        print(f"-> Regressor MSE: {mse:.4f}")
+        print(f"-> Sai số Hồi quy (MSE): {mse:.4f}")
         
-        # Save models
+        # Lưu mô hình
         joblib.dump(self.clf, os.path.join(self.model_path, 'clf_model.joblib'))
         joblib.dump(self.reg, os.path.join(self.model_path, 'reg_model.joblib'))
         self.is_trained = True
-        print("Models saved successfully.")
+        print("Lưu mô hình thành công.")
 
     def load_models(self):
-        """Loads trained models from disk."""
+        """Tải mô hình đã huấn luyện từ ổ cứng."""
         try:
             self.clf = joblib.load(os.path.join(self.model_path, 'clf_model.joblib'))
             self.reg = joblib.load(os.path.join(self.model_path, 'reg_model.joblib'))
@@ -100,19 +100,19 @@ class FJSPML:
             self.is_trained = True
             return True
         except FileNotFoundError:
-            print("Models not found. Please train first.")
+            print("Không tìm thấy mô hình. Vui lòng huấn luyện trước.")
             return False
 
     def predict_adjust(self, job_dict):
         """
-        Input: Dictionary with job details (material_group, process_steps, size_mm, dxf_complexity)
-        Output: Dict with recommendation
+        Đầu vào: Dict chi tiết job (material_group, process_steps, size_mm, dxf_complexity)
+        Đầu ra: Dict khuyến nghị
         """
         if not self.is_trained:
             if not self.load_models():
-                return {"error": "Model not trained"}
+                return {"error": "Mô hình chưa được huấn luyện"}
 
-        # Convert input dict to DataFrame
+        # Chuyển đổi dict đầu vào thành DataFrame
         input_df = pd.DataFrame([job_dict])
         
         try:
@@ -130,19 +130,19 @@ class FJSPML:
             return {"error": str(e)}
 
 if __name__ == "__main__":
-    # Test Run
+    # Chạy thử nghiệm
     ml_system = FJSPML()
     if os.path.exists('schedule_log.csv'):
         ml_system.train('schedule_log.csv')
         
-        # Test Prediction
+        # Dự đoán thử
         test_job = {
             "process_steps": 14,
-            "material_group": "I", # Hard material
+            "material_group": "I", # Vật liệu cứng
             "size_mm": 2000,
             "dxf_complexity": 0.6
         }
-        print("\nTest Prediction (Hard Job):")
+        print("\nDự đoán thử (Job Khó):")
         print(ml_system.predict_adjust(test_job))
         
         test_job_easy = {
