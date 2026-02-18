@@ -39,12 +39,12 @@ tab_selection = st.sidebar.radio("Chọn chức năng:", [
 ], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
-with st.sidebar.expander("Thông tin hệ thống", expanded=True):
-    st.write("Phiên bản: 1.0.0")
-    st.write("Module tích hợp:")
-    st.write("- Phân tích DXF")
-    st.write("- Random Forest AI")
-    st.write("- Genetic Algorithm")
+# with st.sidebar.expander("Thông tin hệ thống", expanded=True):
+#     st.write("Phiên bản: 1.0.0")
+#     st.write("Module tích hợp:")
+#     st.write("- Phân tích DXF")
+#     st.write("- Random Forest AI")
+#     st.write("- Genetic Algorithm")
 
 # ==========================================
 # TAB 1: NHẬP LIỆU (PLANNER)
