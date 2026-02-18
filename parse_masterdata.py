@@ -5,32 +5,32 @@ import shutil
 import os
 
 def parse_master_data():
-    print("--- 1. PREPARING DATA FILE ---")
+    print("--- 1. CHUẨN BỊ FILE DỮ LIỆU ---")
     src = "data/MASTERDATA.csv"
     dst = "data/temp_master.xlsx"
     
-    # Copy to xlsx to satisfy engine requirements if needed
+    # Sao chép sang xlsx để đáp ứng yêu cầu engine nếu cần
     shutil.copy(src, dst)
-    print(f"Read from {dst}...")
+    print(f"Đọc từ {dst}...")
 
     try:
-        # Load Sheets
+        # Tải các Sheet
         df_mat = pd.read_excel(dst, sheet_name='MATERIALS')
         df_mac = pd.read_excel(dst, sheet_name='MACHINES')
         df_cap = pd.read_excel(dst, sheet_name='MACHINE_CAPABILITIES')
         df_spd = pd.read_excel(dst, sheet_name='PROCESSING_SPEEDS')
         
-        # 1. Build Materials Map
+        # 1. Xây dựng Bản đồ Vật liệu
         # 1000... -> A
-        print("--- 2. BUILDING MATERIALS MAP ---")
+        print("--- 2. XÂY DỰNG BẢN ĐỒ VẬT LIỆU ---")
         materials_map = dict(zip(df_mat['material_code'].astype(str), df_mat['material_group']))
-        print(f"Mapped {len(materials_map)} materials.")
+        print(f"Đã ánh xạ {len(materials_map)} vật liệu.")
         
-        # 2. Build Machines Dict
-        print("--- 3. BUILDING MACHINES DATA ---")
+        # 2. Xây dựng Dict Máy
+        print("--- 3. XÂY DỰNG DỮ LIỆU MÁY ---")
         machines = {}
         
-        # Initialize
+        # Khởi tạo
         for _, row in df_mac.iterrows():
             m_id = row['machine_id']
             machines[m_id] = {
@@ -40,14 +40,14 @@ def parse_master_data():
                 "speed_matrix": {}
             }
             
-        # Add Capabilities
+        # Thêm Khả năng
         for _, row in df_cap.iterrows():
             m_id = row['machine_id']
             if m_id in machines:
                 machines[m_id]['capabilities'].append(row['op_type'])
                 
-        # Add Speeds
-        # Structure: speed_matrix[Group][SizeCode] = Speed
+        # Thêm Tốc độ
+        # Cấu trúc: speed_matrix[Group][SizeCode] = Speed
         for _, row in df_spd.iterrows():
             m_id = row['machine_id']
             grp = row['material_group']
@@ -60,7 +60,7 @@ def parse_master_data():
                 
                 machines[m_id]['speed_matrix'][grp][size] = float(speed)
         
-        # 3. Save to JSON
+        # 3. Lưu thành JSON
         final_data = {
             "materials_map": materials_map,
             "machines": machines
@@ -70,11 +70,11 @@ def parse_master_data():
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(final_data, f, indent=4, ensure_ascii=False)
             
-        print(f"--- SUCCESS: Saved to {output_path} ---")
-        print(f"Machines: {list(machines.keys())}")
+        print(f"--- THÀNH CÔNG: Đã lưu vào {output_path} ---")
+        print(f"Máy: {list(machines.keys())}")
         
     except Exception as e:
-        print(f"CRITICAL ERROR: {e}")
+        print(f"LỖI NGHIÊM TRỌNG: {e}")
     finally:
         if os.path.exists(dst):
             os.remove(dst)

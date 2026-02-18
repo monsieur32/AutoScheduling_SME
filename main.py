@@ -6,30 +6,30 @@ import os
 import time
 from datetime import datetime, timedelta
 
-# Import Custom Modules
+# Nhập Module Tùy chỉnh
 from dxf_parser import extract_cutting_info
 from ml_module import FJSPML
 from hybrid_engine import HybridEngine
 
 # ==========================================
-# 0. CONFIG & SETUP
+# 0. CẤU HÌNH & THIẾT LẬP
 # ==========================================
 st.set_page_config(page_title="Hệ thống Lập lịch Sản xuất", layout="wide")
 
-# Initialize Session State
+# Khởi tạo Session State
 if 'jobs_queue' not in st.session_state:
-    st.session_state.jobs_queue = [] # List of job dicts
+    st.session_state.jobs_queue = [] # Danh sách công việc
 
 if 'scheduled_jobs' not in st.session_state:
-    st.session_state.scheduled_jobs = [] # Result from Hybrid Engine
+    st.session_state.scheduled_jobs = [] # Kết quả từ Hybrid Engine
 
 if 'ml_system' not in st.session_state:
     st.session_state.ml_system = FJSPML()
-    # Try loading pre-trained models
+    # Thử tải mô hình đã huấn luyện
     st.session_state.ml_system.load_models()
 
 # ==========================================
-# 1. SIDEBAR & NAVIGATION
+# 1. THANH BÊN & ĐIỀU HƯỚNG
 # ==========================================
 st.sidebar.markdown("## ĐIỀU HƯỚNG")
 tab_selection = st.sidebar.radio("Chọn chức năng:", [
@@ -84,18 +84,18 @@ if tab_selection == "1. Nhập liệu đơn hàng":
             st.markdown("#### Kết quả phân tích (DXF & AI)")
             
             if uploaded_file is not None and btn_analyze:
-                # 1. Save temp file
+                # 1. Lưu file tạm
                 temp_path = os.path.join("data", uploaded_file.name)
                 os.makedirs("data", exist_ok=True)
                 with open(temp_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 
-                # 2. DXF Parser
+                # 2. Phân tích DXF
                 with st.spinner("Đang xử lý dữ liệu..."):
                     dxf_info = extract_cutting_info(temp_path)
                     
                 if dxf_info['status'] == 'success':
-                    # Display metrics in a clean row
+                    # Hiển thị chỉ số gọn gàng
                     m1, m2, m3 = st.columns(3)
                     m1.metric("Tổng chiều dài (mm)", f"{dxf_info['total_len_mm']}")
                     m2.metric("Chiều dài cong (mm)", f"{dxf_info['curved_len_mm']}")
@@ -103,7 +103,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                     
                     st.divider()
                     
-                    # 3. ML Prediction
+                    # 3. Dự đoán AI
                     job_data = {
                         "id": f"JOB-{len(st.session_state.jobs_queue)+1:03d}",
                         "material_group": material,
@@ -121,7 +121,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                         "dxf_complexity": job_data['complexity']
                     })
                     
-                    # 4. Show AI Insights (Clean, no icons)
+                    # 4. Hiển thị đánh giá AI (Sạch, không icon)
                     st.markdown("**Đánh giá từ AI:**")
                     if ai_pred.get('use_expert_rule'):
                         st.warning(
@@ -136,7 +136,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                         )
                         job_data['ml_note'] = "Standard GA"
                     
-                    # Add to Queue
+                    # Thêm vào hàng đợi
                     st.session_state.jobs_queue.append(job_data)
                     st.toast(f"Đã thêm {job_data['id']} vào hàng đợi.")
                     
@@ -149,12 +149,12 @@ if tab_selection == "1. Nhập liệu đơn hàng":
 elif tab_selection == "2. Bảng điều độ sản xuất":
     st.markdown("### TRUNG TÂM ĐIỀU ĐỘ SẢN XUẤT")
     
-    # Section 1: Queue
+    # Phần 1: Hàng đợi
     with st.expander("DANH SÁCH HÀNG ĐỢI CÔNG VIỆC", expanded=True):
         if len(st.session_state.jobs_queue) > 0:
             df_queue = pd.DataFrame(st.session_state.jobs_queue)
             
-            # Clean dataframe display
+            # Hiển thị dataframe sạch sẽ
             st.dataframe(
                 df_queue[['id', 'material_group', 'size_mm', 'complexity', 'ml_note']],
                 use_container_width=True,
@@ -184,17 +184,17 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
 
     st.markdown("---")
     
-    # Section 2: Gantt Chart
+    # Phần 2: Biểu đồ Gantt
     st.markdown("#### BIỂU ĐỒ KẾ HOẠCH SẢN XUẤT (GANTT)")
     if len(st.session_state.scheduled_jobs) > 0:
         df_schedule = pd.DataFrame(st.session_state.scheduled_jobs)
         
-        # Prepare for Plotly
+        # Chuẩn bị cho Plotly
         base_time = datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
         df_schedule['Start_Time'] = df_schedule['start'].apply(lambda x: base_time + timedelta(minutes=x))
         df_schedule['Finish_Time'] = df_schedule['finish'].apply(lambda x: base_time + timedelta(minutes=x))
         
-        # Clean Chart
+        # Biểu đồ sạch
         color_map = {
             "Standard GA": "#2980B9",  # Professional Blue
             "Expert Intervention": "#C0392B" # Professional Red
@@ -219,7 +219,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
         fig.update_yaxes(categoryorder="category ascending")
         st.plotly_chart(fig, use_container_width=True)
         
-        # Data Table Export
+        # Xuất dữ liệu bảng
         with st.expander("Xem chi tiết dữ liệu"):
             st.dataframe(df_schedule, use_container_width=True)
             csv = df_schedule.to_csv(index=False).encode('utf-8')
@@ -229,7 +229,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
         st.write("Chưa có dữ liệu lịch trình.")
 
 # ==========================================
-# TAB 3: WORKER
+# TAB 3: CÔNG NHÂN
 # ==========================================
 elif tab_selection == "3. Giao diện Máy (Công nhân)":
     st.markdown("### GIAO DIỆN VẬN HÀNH MÁY")
@@ -245,7 +245,7 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
         my_jobs = [j for j in st.session_state.scheduled_jobs if j['machine'] == selected_machine]
         my_jobs = sorted(my_jobs, key=lambda x: x['start'])
         
-        # Use simpler table-like layout
+        # Sử dụng layout dạng bảng đơn giản
         for job in my_jobs:
             with st.container(border=True):
                 c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
@@ -253,17 +253,17 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
                 # Job ID
                 c1.markdown(f"**{job['job_id']}**")
                 
-                # Time
+                # Thời gian
                 start_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['start'])).strftime('%H:%M')
                 end_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['finish'])).strftime('%H:%M')
                 c2.write(f"{start_str} - {end_str}")
                 
-                # Note
+                # Ghi chú
                 if job['note'] == "Expert Intervention":
                     c3.write("Lưu ý: Chạy chế độ an toàn")
                 else:
                     c3.write("Chế độ tiêu chuẩn")
                 
-                # Action
+                # Hành động
                 if c4.button("Xong", key=f"btn_{job['job_id']}"):
                     st.toast(f"Đã hoàn thành {job['job_id']}")
