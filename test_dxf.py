@@ -4,7 +4,7 @@ import glob
 from dxf_parser import extract_cutting_info
 
 # Initial directory
-dxf_dir = r"c:\Users\32ngu\Desktop\AutoScheduling_SME-main\AutoScheduling_SME-main\bản vẽ đá\bản vẽ đá"
+dxf_dir = r"c:\Users\32ngu\Desktop\AutoScheduling_SME-main\AutoScheduling_SME-main\designs"
 
 # Find DXF files
 dxf_files = glob.glob(os.path.join(dxf_dir, "*.dxf"))
