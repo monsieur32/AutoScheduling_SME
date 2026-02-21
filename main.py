@@ -91,7 +91,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                     f.write(uploaded_file.getbuffer())
                 
                 # 2. Phân tích DXF
-                with st.spinner("Đang xử lý dữ liệu..."):
+                with st.expander("Đang xử lý dữ liệu..."):
                     dxf_info = extract_cutting_info(temp_path)
                     
                 if dxf_info['status'] == 'success':
