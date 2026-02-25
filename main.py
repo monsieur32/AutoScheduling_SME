@@ -172,13 +172,13 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
             with c_opt2:
                 if st.button("CHẠY LẬP LỊCH (HYBRID ENGINE)", type="primary"):
                     engine = HybridEngine()
-                    with st.status("Đang tính toán phương án tối ưu...", expanded=True) as status:
+                    with st.spinner("Đang tính toán phương án tối ưu..."):
                         st.write("Đang tải dữ liệu máy...")
                         time.sleep(0.3)
                         st.write("Đang phân tích ràng buộc kỹ thuật...")
                         schedule = engine.solve(st.session_state.jobs_queue, use_ml=use_ml)
                         st.session_state.scheduled_jobs = schedule
-                        status.update(label="Hoàn tất lập lịch", state="complete", expanded=False)
+                    st.success("Hoàn tất lập lịch")
         else:
             st.info("Chưa có đơn hàng nào trong hàng đợi.")
 
