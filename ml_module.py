@@ -38,12 +38,8 @@ class FJSPML:
             # Lưu bộ mã hóa để suy luận sau này
             joblib.dump(self.le_material, os.path.join(self.model_path, 'le_material.joblib'))
         else:
-            # Tải bộ mã hóa nếu không phải chế độ huấn luyện
             self.le_material = joblib.load(os.path.join(self.model_path, 'le_material.joblib'))
-            
-            # Xử lý nhãn lạ khi suy luận (fallback về nhãn phổ biến như 'C')
-            # Để đơn giản trong demo này, giả định nhãn đã biết hoặc bỏ qua lỗi
-            # Trong thực tế, cần bộ mã hóa mạnh mẽ hơn
+
             pass
 
         df_clean['material_code'] = self.le_material.transform(df_clean['material_group'])
@@ -73,13 +69,13 @@ class FJSPML:
             X, y_clf, y_reg, test_size=0.2, random_state=42
         )
         
-        # Huấn luyện Phân loại (Có nên dùng Chuyên gia?)
+        # Huấn luyện Phân loại
         print("Đang huấn luyện Bộ phân loại...")
         self.clf.fit(X_train, y_clf_train)
         acc = accuracy_score(y_clf_test, self.clf.predict(X_test))
         print(f"-> Độ chính xác Phân loại: {acc:.2f}")
         
-        # Huấn luyện Hồi quy (Cải thiện bao nhiêu?)
+        # Huấn luyện Hồi quy
         print("Đang huấn luyện Bộ hồi quy...")
         self.reg.fit(X_train, y_reg_train)
         mse = mean_squared_error(y_reg_test, self.reg.predict(X_test))

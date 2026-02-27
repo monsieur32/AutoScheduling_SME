@@ -3,7 +3,7 @@ import random
 import json
 import copy
 from ml_module import FJSPML
-# import ga_module # Placeholder: In a real scenario, we would import the full GA class
+from ga_vns import GAVNSSolver
 
 class HybridEngine:
     def __init__(self, master_data_path='cleaned_master_data.json', ml_model_path='models'):
@@ -11,42 +11,36 @@ class HybridEngine:
             self.master_data = json.load(f)
         
         self.ml = FJSPML(model_path=ml_model_path)
-        self.ml.load_models() # Ensure models are loaded
+        self.ml.load_models()
         
     def apply_expert_constraints(self, jobs, use_ml=True):
-        """
-        Quét các job bằng Logic ML/Luật.
-        Nếu ML dự đoán 'better_expert' -> Khóa máy cụ thể hoặc thêm phạt.
-        """
         adjusted_jobs = copy.deepcopy(jobs)
         log = []
         
         for job in adjusted_jobs:
-            # Chuẩn bị dữ liệu đầu vào cho ML
-            # Ánh xạ khóa dữ liệu thực sang khóa đặc trưng ML
+
             ml_input = {
-                "process_steps": len(job.get('operations', [])), # Ví dụ cấu trúc
+                "process_steps": len(job.get('operations', [])),
                 "material_group": job.get('material_group', 'C'),
                 "size_mm": job.get('size_mm', 1000),
                 "dxf_complexity": job.get('complexity', 0.1)
             }
             
-            # 1. Kiểm tra DXF (Luật Cứng) - Từ bước trước
+            # 1. Kiểm tra DXF
             if job.get('complexity', 0) > 0.3:
                  job['constraints'] = ['Waterjet', 'CNC']
                  log.append(f"Job {job['id']}: Dị hình phức tạp -> Giới hạn máy Waterjet/CNC")
-                 continue # Bỏ qua kiểm tra ML nếu đã có ràng buộc cứng
+                 continue
             
-            # 2. Dự đoán ML (Luật Mềm)
+            # 2. Dự đoán ML
             if use_ml:
                 prediction = self.ml.predict_adjust(ml_input)
                 
                 if prediction.get('use_expert_rule'):
-                    # Chiến lược chuyên gia: Với Vật liệu cứng (I, L, K), tránh máy rung mạnh
-                    # Đây là "Tri thức Ngầm" được đưa lại vào hệ thống
+
                     if ml_input['material_group'] in ['I', 'L', 'K']:
                         job['priority'] = 'HIGH'
-                        job['slow_mode'] = True # cờ giả định để GA chọn tốc độ chậm/an toàn hơn
+                        job['slow_mode'] = True
                         log.append(f"Job {job['id']}: Luật chuyên gia ML -> Ưu tiên Cao & Chế độ An toàn (ROI +{prediction['predicted_roi']:.1%})")
             
         return adjusted_jobs, log
@@ -67,12 +61,8 @@ class HybridEngine:
         return candidates
 
     def calculate_duration(self, machine_id, material_group, size_mm):
-        """
-        Tra cứu bảng tốc độ để ước tính thời gian.
-        """
         m_data = self.master_data['machines'].get(machine_id)
-        if not m_data: return 60 # Mặc định dự phòng
-        
+        if not m_data: return 60
         # Xác định nhóm kích thước (Mã mới)
         if size_mm < 200: size_cat = "LT_200"
         elif size_mm < 400: size_cat = "B200_400"
@@ -88,73 +78,26 @@ class HybridEngine:
 
     def run_ga_simulation(self, jobs):
         """
-        Mô phỏng Lập lịch GA với Dữ liệu Thực.
+        Sử dụng thuật toán GA-VNS để thay thế cho mô phỏng Greedy cũ.
         """
-        schedule = []
-        machine_availability = {m: 0 for m in self.master_data['machines'].keys()}
+        print("Starting GA-VNS Optimizer...")
+        solver = GAVNSSolver(
+            jobs=jobs,
+            machines_data=self.master_data['machines'],
+            calculate_duration_fn=self.calculate_duration,
+            pop_size=50,  # Giảm xuống 50 để chạy nhanh trên UI
+            max_gen=50,   # Giảm xuống 50 thế hệ
+            tightness_factor=1.5
+        )
+        schedule = solver.solve()
         
-        # Sắp xếp theo ưu tiên (Tác động can thiệp chuyên gia)
-        sorted_jobs = sorted(jobs, key=lambda x: 0 if x.get('priority') == 'HIGH' else 1)
+        makespan = max((s['finish'] for s in schedule), default=0)
         
-        for job in sorted_jobs:
-            is_complex = job.get('complexity', 0) > 0.1
-            
-            # 1. Tìm Ứng viên
-            candidates = self.find_suitable_machines(is_complex)
-            
-            # Ràng buộc Chuyên gia: Nếu job có ràng buộc cụ thể, giao thoa tập hợp
-            if job.get('constraints'):
-                # Ánh xạ danh mục rộng sang ID cụ thể nếu cần, hoặc giả định ràng buộc là ID
-                # Hiện tại, giả định ràng buộc là Loại Máy (Waterjet/CNC)
-                # Lọc ứng viên khớp chính xác từ khóa "Waterjet" hoặc "CNC" trong ID/Tên
-                # logic: giữ nguyên ứng viên
-                pass
-            
-            if not candidates:
-                candidates = ["MANUAL_FALLBACK"]
-            
-            # 2. Lựa chọn GA (Tham lam cho MVP: Chọn máy có thời gian hoàn thành sớm nhất)
-            best_machine = None
-            earliest_finish = float('inf')
-            best_duration = 0
-            
-            for m in candidates:
-                if m == "MANUAL_FALLBACK": continue
-                
-                # Tính toán Thời gian
-                duration = self.calculate_duration(m, job.get('material_group', 'C'), job.get('size_mm', 1000))
-                
-                if job.get('slow_mode'):
-                    duration = int(duration * 1.5) # Chậm hơn 50%
-                
-                start_time = machine_availability[m]
-                finish_time = start_time + duration
-                
-                if finish_time < earliest_finish:
-                    earliest_finish = finish_time
-                    best_machine = m
-                    best_duration = duration
-            
-            # Dự phòng
-            if best_machine is None:
-                best_machine = "MANUAL_WORK"
-                best_duration = 120
-                earliest_finish = machine_availability.get(best_machine, 0) + 120
-            
-            # 3. Lên lịch
-            schedule.append({
-                "job_id": job['id'],
-                "machine": best_machine,
-                "start": earliest_finish - best_duration,
-                "finish": earliest_finish,
-                "note": "Expert Intervention" if job.get('priority') == 'HIGH' else "Standard GA"
-            })
-            
-            # Cập nhật trạng thái máy
-            if best_machine in machine_availability:
-                machine_availability[best_machine] = earliest_finish
-            
-        makespan = max(s['finish'] for s in schedule) if schedule else 0
+        # Định dạng lại note cho schedule nếu priority cao
+        for s in schedule:
+            job_info = next((j for j in jobs if j['id'] == s['job_id']), {})
+            s['note'] = "Expert Intervention" if job_info.get('priority') == 'HIGH' else "Standard GA-VNS"
+
         return schedule, makespan
 
     def solve(self, input_jobs, use_ml=True):

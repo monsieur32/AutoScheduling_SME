@@ -57,13 +57,23 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         
         with col1:
             st.markdown("#### Thông tin đầu vào")
-            uploaded_file = st.file_uploader("Tải lên bản vẽ (.dxf)", type=['dxf'])
+            uploaded_files = st.file_uploader("Tải lên bản vẽ (.dxf)", type=['dxf'], accept_multiple_files=True)
             
             c1, c2 = st.columns(2)
             with c1:
                 material = st.selectbox("Nhóm Vật Liệu", ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], index=2)
             with c2:
                 quantity = st.number_input("Số lượng (tấm)", min_value=1, value=1)
+                
+            c3, c4 = st.columns(2)
+            with c3:
+                # Mặc định due date là ngày mai, lúc 17:00
+                default_due = datetime.now() + timedelta(days=1)
+                due_date_input = st.date_input("Hạn chót (Due Date)", value=default_due.date())
+                due_time_input = st.time_input("Giờ giao", value=datetime.strptime("17:00", "%H:%M").time())
+                due_datetime = datetime.combine(due_date_input, due_time_input)
+            with c4:
+                priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
             
             process_type = st.selectbox("Quy trình Gia công", [
                 "Cắt thô (Standard)", 
@@ -71,10 +81,14 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                 "Cắt + Soi cạnh + Đánh bóng (Complex)"
             ])
             
+            # process_map indicates the number of operations for each type of process.
+            # E.g. "Cắt thô" -> 1 operation (Cutting)
+            # "Cắt + Đánh bóng" -> 2 operations (Cutting, Polishing)
+            # "Cắt + Soi cạnh + Đánh bóng" -> 3 operations (Cutting, Edging, Polishing)
             process_map = {
-                "Cắt thô (Standard)": 5,
-                "Cắt + Đánh bóng (Polishing)": 8,
-                "Cắt + Soi cạnh + Đánh bóng (Complex)": 14
+                "Cắt thô (Standard)": 1,
+                "Cắt + Đánh bóng (Polishing)": 2,
+                "Cắt + Soi cạnh + Đánh bóng (Complex)": 3
             }
             
             st.markdown("<br>", unsafe_allow_html=True)
@@ -83,27 +97,30 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         with col2:
             st.markdown("#### Kết quả phân tích (DXF & AI)")
             
-            if uploaded_file is not None and btn_analyze:
+            if uploaded_files and btn_analyze:
                 # 1. Lưu file tạm
-                temp_path = os.path.join("data", uploaded_file.name)
+                temp_paths = []
                 os.makedirs("data", exist_ok=True)
-                with open(temp_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+                for file in uploaded_files:
+                    temp_path = os.path.join("data", file.name)
+                    with open(temp_path, "wb") as f:
+                        f.write(file.getbuffer())
+                    temp_paths.append(temp_path)
                 
                 # 2. Phân tích DXF
-                with st.expander("Đang xử lý dữ liệu..."):
-                    dxf_info = extract_cutting_info(temp_path)
+                with st.expander("Đang xử lý dữ liệu DXF..."):
+                    dxf_info = extract_cutting_info(temp_paths)
                     
                 if dxf_info['status'] == 'success':
                     # Hiển thị chỉ số gọn gàng
                     m1, m2, m3 = st.columns(3)
                     m1.metric("Tổng chiều dài (mm)", f"{dxf_info['total_len_mm']}")
-                    m2.metric("Chiều dài cong (mm)", f"{dxf_info['curved_len_mm']}")
+                    m2.metric("Số lượng file", f"{dxf_info['files_processed']}")
                     m3.metric("Tỷ lệ phức tạp", f"{dxf_info['complexity_ratio']}")
                     
                     st.divider()
                     
-                    # 3. Dự đoán AI
+                    # 3. Dự đoán AI và chuẩn bị Job Data
                     job_data = {
                         "id": f"JOB-{len(st.session_state.jobs_queue)+1:03d}",
                         "material_group": material,
@@ -111,7 +128,9 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                         "size_mm": dxf_info['total_len_mm'], 
                         "complexity": dxf_info['complexity_ratio'],
                         "quantity": quantity,
-                        "operations": list(range(process_map[process_type]))
+                        "operations": list(range(process_map[process_type])),
+                        "due_date": due_datetime,
+                        "priority": priority_input
                     }
                     
                     ai_pred = st.session_state.ml_system.predict_adjust({
@@ -140,6 +159,9 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                     st.session_state.jobs_queue.append(job_data)
                     st.toast(f"Đã thêm {job_data['id']} vào hàng đợi.")
                     
+                    if dxf_info.get("warnings"):
+                        st.warning("Cảnh báo: " + "; ".join(dxf_info["warnings"]))
+                        
                 else:
                     st.error(f"Lỗi: {dxf_info['message']}")
 
