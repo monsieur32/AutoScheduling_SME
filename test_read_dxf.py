@@ -2,70 +2,58 @@ import ezdxf
 import math
 
 
-def calculate_lengths(file_path):
+def calculate_total_cut_length(file_path):
     try:
         doc = ezdxf.readfile(file_path)
         msp = doc.modelspace()
 
-        total_linear = 0.0
-        total_curve = 0.0
+        # Chỉ lấy các thực thể có khả năng tạo thành đường cắt
+        # Chúng ta bỏ qua DIMENSION, TEXT, MTEXT, v.v.
+        cutting_entities = msp.query('LINE CIRCLE ARC LWPOLYLINE POLYLINE')
 
-        for entity in msp:
+        total_length = 0.0
+
+        print(f"--- ĐANG PHÂN TÍCH CHIỀU DÀI CẮT ---")
+
+        for entity in cutting_entities:
             e_type = entity.dxftype()
+            length = 0.0
 
-            # 1. Xử lý đường thẳng đơn (LINE)
             if e_type == 'LINE':
-                start = entity.dxf.start
-                end = entity.dxf.end
-                dist = math.dist(start, end)
-                total_linear += dist
+                # Khoảng cách giữa điểm đầu và điểm cuối
+                length = math.dist(entity.dxf.start, entity.dxf.end)
 
-            # 2. Xử lý hình tròn (CIRCLE) -> Tính chu vi
             elif e_type == 'CIRCLE':
-                total_curve += 2 * math.pi * entity.dxf.radius
+                # Chu vi hình tròn: 2 * pi * R
+                length = 2 * math.pi * entity.dxf.radius
 
-            # 3. Xử lý cung tròn (ARC) -> Tính độ dài cung
             elif e_type == 'ARC':
-                # Độ dài cung = R * (góc_kết_thúc - góc_bắt_đầu) tính bằng radian
-                radius = entity.dxf.radius
-                start_angle = entity.dxf.start_angle
-                end_angle = entity.dxf.end_angle
+                # Chiều dài cung tròn: R * góc (radian)
+                delta_angle = entity.dxf.end_angle - entity.dxf.start_angle
+                if delta_angle < 0: delta_angle += 360
+                length = entity.dxf.radius * math.radians(delta_angle)
 
-                # Xử lý trường hợp góc đi qua điểm 0 độ
-                if end_angle < start_angle:
-                    end_angle += 360
-
-                angle_diff = math.radians(end_angle - start_angle)
-                total_curve += radius * angle_diff
-
-            # 4. Xử lý Đa tuyến (LWPOLYLINE) - Quan trọng nhất trong file của bạn
-            elif e_type == 'LWPOLYLINE':
-                # virtual_entities() tự động tách Polyline thành các LINE và ARC nhỏ
+            elif e_type in ['LWPOLYLINE', 'POLYLINE']:
+                # Polyline có thể chứa cả đoạn thẳng và cung tròn
+                # virtual_entities() giúp tách chúng ra để tính chính xác nhất
                 for sub_entity in entity.virtual_entities():
                     if sub_entity.dxftype() == 'LINE':
-                        total_linear += math.dist(sub_entity.dxf.start, sub_entity.dxf.end)
+                        length += math.dist(sub_entity.dxf.start, sub_entity.dxf.end)
                     elif sub_entity.dxftype() == 'ARC':
-                        # Tính độ dài cung cho phần cong của Polyline
-                        radius = sub_entity.dxf.radius
-                        start_angle = sub_entity.dxf.start_angle
-                        end_angle = sub_entity.dxf.end_angle
-                        if end_angle < start_angle:
-                            end_angle += 360
-                        total_curve += radius * math.radians(end_angle - start_angle)
+                        d_angle = sub_entity.dxf.end_angle - sub_entity.dxf.start_angle
+                        if d_angle < 0: d_angle += 360
+                        length += sub_entity.dxf.radius * math.radians(d_angle)
 
-        return total_linear, total_curve
+            total_length += length
+
+        print(f"Tổng chiều dài máy cần cắt: {total_length:.2f} mm")
+        return total_length
 
     except Exception as e:
         print(f"Lỗi: {e}")
-        return 0, 0
+        return 0.0
 
 
-# Thực thi
-file_name = "designs/250911700.dxf"  # Thay bằng file của bạn
-linear, curve = calculate_lengths(file_name)
-
-print(f"{'=' * 30}")
-print(f"TỔNG CHIỀU DÀI ĐƯỜNG THẲNG: {linear:.2f} mm")
-print(f"TỔNG CHIỀU DÀI ĐƯỜNG CONG:  {curve:.2f} mm")
-print(f"TỔNG CỘNG:                 {linear + curve:.2f} mm")
-print(f"{'=' * 30}")
+# Sử dụng
+file_name = "designs/250911700.dxf"
+calculate_total_cut_length(file_name)

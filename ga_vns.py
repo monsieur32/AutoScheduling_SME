@@ -41,22 +41,28 @@ class GAVNSSolver:
             is_complex = job.get('complexity', 0) > 0.1
             required_cap = "Cut_contour" if is_complex else "Cut_straight"
             
-            # Lọc máy phù hợp (Lấy từ logic Hybrid Engine)
-            eligible_machines = []
-            if job.get('constraints'):
-                pass # Có thể mở rộng sau nếu có ràng buộc cụ thể trong job
-                
-            for m_id, m_data in self.machines_data.items():
-                if required_cap in m_data.get('capabilities', []):
-                    eligible_machines.append(m_id)
-                    
-            if not eligible_machines:
-                eligible_machines = ["MANUAL_FALLBACK"]
-                
+            # processing_times calculation
             num_ops = len(job.get('operations', []))
             for op_idx in range(num_ops):
                 self.job_ops.append((job_idx, op_idx, job_id))
                 
+                # Retrieve the specific operation name for this step
+                # if the operations are just integers (old format fallback), we use required_cap
+                op_val = job['operations'][op_idx]
+                if isinstance(op_val, str):
+                    op_req_cap = op_val
+                else:
+                    op_req_cap = required_cap
+
+                # Filter eligible machines per operation
+                eligible_machines = []
+                for m_id, m_data in self.machines_data.items():
+                    if op_req_cap in m_data.get('capabilities', []):
+                        eligible_machines.append(m_id)
+                        
+                if not eligible_machines:
+                    eligible_machines = ["MANUAL_FALLBACK"]
+
                 op_times = {}
                 min_time = float('inf')
                 for m_id in eligible_machines:

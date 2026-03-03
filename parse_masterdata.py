@@ -60,10 +60,27 @@ def parse_master_data():
                 
                 machines[m_id]['speed_matrix'][grp][size] = float(speed)
         
-        # 3. Lưu thành JSON
+        # 4. Xây dựng Dữ liệu Process Templates
+        print("--- 4. XÂY DỰNG PROCESS TEMPLATES ---")
+        df_tmpl = pd.read_excel(dst, sheet_name='PROCESS_TEMPLATES')
+        process_map = {}
+        for _, row in df_tmpl.iterrows():
+            # Combine process name and product type for display
+            key = f"{row['process_name']} ({row['product_type']})"
+            # Extract list of operations
+            if pd.notna(row['op_sequence']):
+                steps = [op.strip() for op in str(row['op_sequence']).split('→')]
+            else:
+                steps = ["Cut_straight"] # Default fallback
+            process_map[key] = steps
+            
+        print(f"Đã ánh xạ {len(process_map)} quy trình.")
+
+        # 5. Lưu thành JSON
         final_data = {
             "materials_map": materials_map,
-            "machines": machines
+            "machines": machines,
+            "process_map": process_map
         }
         
         output_path = 'cleaned_master_data.json'

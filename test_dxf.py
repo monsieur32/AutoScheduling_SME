@@ -52,6 +52,7 @@ for r in results:
             speed = SPEED_BRIDGE_SAW
             
         est_time = total / speed
-        print(f"File: {os.path.basename(r['filename'])}")
+        display_name = f[0] if isinstance(f, list) else f
+        print(f"File: {os.path.basename(display_name)}")
         print(f"  Machine: {mech} (Speed: {speed} mm/min)")
         print(f"  Est. Time: {round(est_time, 1)} min")

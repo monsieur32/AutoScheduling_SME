@@ -1,23 +1,26 @@
-
 import ezdxf
 import math
 
-def extract_cutting_info(dxf_paths):
-    """
-    Phân tích một hoặc nhiều file DXF để trích xuất tổng chiều dài cắt và thông tin hình học.
-    Trả về tổng hợp của tất cả các file.
-    """
-    if isinstance(dxf_paths, str):
-        dxf_paths = [dxf_paths]
-        
-    total_straight = 0.0
-    total_curved = 0.0
-    total_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
-    
-    success_files = []
-    error_messages = []
+# --- CẤU HÌNH TÙY CHỌN (LỌC LOẠI ĐƯỜNG) ---
+# Danh sách các loại đường muốn tính chiều dài. Để trống [] sẽ tính TẤT CẢ các đường.
+# Ví dụ chỉ polyline:  ALLOWED_ENTITY_TYPES = ['POLYLINE']
+# Ví dụ chỉ lwpolyline: ALLOWED_ENTITY_TYPES = ['LWPOLYLINE']
+ALLOWED_ENTITY_TYPES = []
 
-    for path in dxf_paths:
+def extract_cutting_info(dxf_path):
+    """
+    Phân tích file DXF để trích xuất tổng chiều dài cắt và thông tin hình học.
+    Giả định đường cắt nằm trên các layer cụ thể hoặc là các thực thể chuẩn (LINE, ARC, POLYLINE...).
+    """
+    file_paths = dxf_path if isinstance(dxf_path, list) else [dxf_path]
+    
+    total_straight_len = 0.0
+    total_curved_len = 0.0
+    total_entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
+    files_processed = 0
+    warnings_list = []
+
+    for path in file_paths:
         try:
             doc = ezdxf.readfile(path)
             msp = doc.modelspace()
@@ -25,10 +28,14 @@ def extract_cutting_info(dxf_paths):
             straight_len = 0.0
             curved_len = 0.0
             entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
-        
+            
             # Duyệt qua các thực thể trong không gian mô hình
             for entity in msp:
                 entity_type = entity.dxftype()
+                
+                # Bỏ qua các đường không nằm trong danh sách cho phép (nếu có cấu hình danh sách)
+                if ALLOWED_ENTITY_TYPES and entity_type not in ALLOWED_ENTITY_TYPES:
+                    continue
                 
                 if entity_type == 'LINE':
                     start = entity.dxf.start
@@ -36,7 +43,7 @@ def extract_cutting_info(dxf_paths):
                     l = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
                     straight_len += l
                     entity_counts["LINE"] += 1
-                
+                    
                 elif entity_type == 'ARC':
                     radius = entity.dxf.radius
                     start_angle = entity.dxf.start_angle
@@ -51,7 +58,7 @@ def extract_cutting_info(dxf_paths):
                     l = 2 * math.pi * entity.dxf.radius
                     curved_len += l
                     entity_counts["CIRCLE"] += 1
-                
+                    
                 elif entity_type == 'LWPOLYLINE':
                     # Duyệt các đoạn để kiểm tra độ phình (đường cong)
                     points = entity.get_points(format='xyb') # x, y, bulge
@@ -99,37 +106,33 @@ def extract_cutting_info(dxf_paths):
                     entity_counts["POLYLINE"] += 1
                     
                 # TODO: CÀI ĐẶT SPLINE
+            
+            total_straight_len += straight_len
+            total_curved_len += curved_len
+            for k in entity_counts:
+                total_entity_counts[k] += entity_counts[k]
                 
-            # Cập nhật tổng
-            total_straight += straight_len
-            total_curved += curved_len
-            for k in total_counts:
-                total_counts[k] += entity_counts[k]
-                
-            success_files.append(path)
+            files_processed += 1
 
         except IOError:
-            error_messages.append(f"{path}: File not found or unreadable.")
+            warnings_list.append(f"File not found or unreadable: {path}")
         except ezdxf.DXFStructureError:
-            error_messages.append(f"{path}: Invalid DXF file structure.")
+            warnings_list.append(f"Invalid DXF file structure: {path}")
         except Exception as e:
-            error_messages.append(f"{path}: {str(e)}")
+            warnings_list.append(f"Error processing {path}: {str(e)}")
 
-    if not success_files:
-        return {
-            "status": "error", 
-            "message": "Không thể đọc bất kỳ file nào: " + "; ".join(error_messages)
-        }
+    if files_processed == 0:
+        return {"status": "error", "message": "No DXF files were successfully processed.", "warnings": warnings_list}
         
     return {
         "status": "success",
-        "files_processed": len(success_files),
-        "total_len_mm": round(total_straight + total_curved, 2),
-        "straight_len_mm": round(total_straight, 2),
-        "curved_len_mm": round(total_curved, 2),
-        "complexity_ratio": round(total_curved / (total_straight + total_curved + 1e-9), 2),
-        "entity_counts": total_counts,
-        "warnings": error_messages if error_messages else None
+        "total_len_mm": round(total_straight_len + total_curved_len, 2),
+        "straight_len_mm": round(total_straight_len, 2),
+        "curved_len_mm": round(total_curved_len, 2),
+        "complexity_ratio": round(total_curved_len / (total_straight_len + total_curved_len + 1e-9), 2),
+        "entity_counts": total_entity_counts,
+        "files_processed": files_processed,
+        "warnings": warnings_list
     }
 
 if __name__ == "__main__":

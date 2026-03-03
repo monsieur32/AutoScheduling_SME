@@ -344,5 +344,87 @@
             "capabilities": [],
             "speed_matrix": {}
         }
+    },
+    "process_map": {
+        "Quy trình 1 (Phôi thô)": [
+            "Cut_straight"
+        ],
+        "Quy trình 2 (Phôi cong hoặc bo góc)": [
+            "Cut_straight",
+            "Cut_contour"
+        ],
+        "Quy trình 3 (Tấm thẳng có vát cạnh)": [
+            "Cut_straight",
+            "Chamfer_45"
+        ],
+        "Quy trình 4 (Tấm thẳng có chạy chỉ/rãnh)": [
+            "Cut_straight",
+            "Edge_simple"
+        ],
+        "Quy trình 5 (Tấm thẳng có hoa văn phức tạp)": [
+            "Cut_straight",
+            "Edge_complex"
+        ],
+        "Quy trình 6 (Sản phẩm cong có vát 45)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Chamfer_45"
+        ],
+        "Quy trình 7 (Sản phẩm cong có chạy chỉ)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Edge_simple"
+        ],
+        "Quy trình 8 (Sản phẩm cong có hoa văn)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Edge_complex"
+        ],
+        "Quy trình 9 (Tấm thẳng vát + soi rãnh)": [
+            "Cut_straight",
+            "Chamfer_45",
+            "Edge_simple"
+        ],
+        "Quy trình 10 (Tấm thẳng vát + hoa văn)": [
+            "Cut_straight",
+            "Chamfer_45",
+            "Edge_complex"
+        ],
+        "Quy trình 11 (Tấm thẳng đa lớp biên dạng)": [
+            "Cut_straight",
+            "Edge_simple",
+            "Edge_complex"
+        ],
+        "Quy trình 12 (Phôi dị hình + vát + rãnh)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Chamfer_45",
+            "Edge_simple"
+        ],
+        "Quy trình 13 (Phôi dị hình + vát + hoa văn)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Chamfer_45",
+            "Edge_complex"
+        ],
+        "Quy trình 14 (Phôi dị hình + đa biên dạng)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Edge_simple",
+            "Edge_complex"
+        ],
+        "Quy trình 15 (Phôi thẳng + vát + đa biên dạng)": [
+            "Cut_straight",
+            "Chamfer_45",
+            "Edge_simple",
+            "Edge_complex"
+        ],
+        "Quy trình 16 (Đầy đủ tất cả công đoạn)": [
+            "Cut_straight",
+            "Cut_contour",
+            "Chamfer_45",
+            "Edge_simple",
+            "Edge_complex"
+        ]
     }
 }

@@ -39,12 +39,12 @@ tab_selection = st.sidebar.radio("Chọn chức năng:", [
 ], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
-with st.sidebar.expander("Thông tin hệ thống", expanded=True):
-    st.write("Phiên bản: 1.0.0")
-    st.write("Module tích hợp:")
-#     st.write("- Phân tích DXF")
-#     st.write("- Random Forest AI")
-#     st.write("- Genetic Algorithm")
+# with st.sidebar.expander("Thông tin hệ thống", expanded=True):
+#     st.write("Phiên bản: 1.0.0")
+#     st.write("Module tích hợp:")
+# #     st.write("- Phân tích DXF")
+# #     st.write("- Random Forest AI")
+# #     st.write("- Genetic Algorithm")
 
 # ==========================================
 # TAB 1: NHẬP LIỆU (PLANNER)
@@ -75,27 +75,30 @@ if tab_selection == "1. Nhập liệu đơn hàng":
             with c4:
                 priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
             
-            process_type = st.selectbox("Quy trình Gia công", [
-                "Cắt thô (Standard)", 
-                "Cắt + Đánh bóng (Polishing)", 
-                "Cắt + Soi cạnh + Đánh bóng (Complex)"
-            ])
+            import json
+            try:
+                with open("cleaned_master_data.json", "r", encoding="utf-8") as f:
+                    md_json = json.load(f)
+                process_map = md_json.get("process_map", {})
+            except Exception:
+                process_map = {}
+                
+            # Fallback in case JSON is missing or map is empty
+            if not process_map:
+                process_map = {
+                    "Cắt thô (Standard)": 1,
+                    "Cắt + Đánh bóng (Polishing)": 2,
+                    "Cắt + Soi cạnh + Đánh bóng (Complex)": 3
+                }
             
-            # process_map indicates the number of operations for each type of process.
-            # E.g. "Cắt thô" -> 1 operation (Cutting)
-            # "Cắt + Đánh bóng" -> 2 operations (Cutting, Polishing)
-            # "Cắt + Soi cạnh + Đánh bóng" -> 3 operations (Cutting, Edging, Polishing)
-            process_map = {
-                "Cắt thô (Standard)": 1,
-                "Cắt + Đánh bóng (Polishing)": 2,
-                "Cắt + Soi cạnh + Đánh bóng (Complex)": 3
-            }
+            process_options = list(process_map.keys())
+            process_type = st.selectbox("Quy trình Gia công", process_options)
             
             st.markdown("<br>", unsafe_allow_html=True)
             btn_analyze = st.button("Phân tích & Thêm vào hàng đợi", use_container_width=True)
 
         with col2:
-            st.markdown("#### Kết quả phân tích (DXF & AI)")
+            st.markdown("#### Kết quả phân tích")
             
             if uploaded_files and btn_analyze:
                 # 1. Lưu file tạm
@@ -124,11 +127,11 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                     job_data = {
                         "id": f"JOB-{len(st.session_state.jobs_queue)+1:03d}",
                         "material_group": material,
-                        "process_steps": process_map[process_type],
+                        "process_steps": len(process_map[process_type]),
                         "size_mm": dxf_info['total_len_mm'], 
                         "complexity": dxf_info['complexity_ratio'],
                         "quantity": quantity,
-                        "operations": list(range(process_map[process_type])),
+                        "operations": process_map[process_type],
                         "due_date": due_datetime,
                         "priority": priority_input
                     }
@@ -140,19 +143,19 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                         "dxf_complexity": job_data['complexity']
                     })
                     
-                    # 4. Hiển thị đánh giá AI (Sạch, không icon)
-                    st.markdown("**Đánh giá từ AI:**")
+                    # 4. Hiển thị đánh giá
+                    st.markdown("**Đánh giá**")
                     if ai_pred.get('use_expert_rule'):
-                        st.warning(
-                            f"Phát hiện rủi ro cao (Đá cứng/Quy trình dài).\n"
-                            f"Đề xuất: Kích hoạt chế độ chuyên gia (Ưu tiên cao, giảm tốc độ máy).\n"
-                            f"Lợi ích dự kiến (ROI): +{ai_pred.get('predicted_roi', 0):.1%}"
-                        )
+                        # st.warning(
+                        #     f"Phát hiện rủi ro cao (Đá cứng/Quy trình dài).\n"
+                        #     f"Đề xuất: Kích hoạt chế độ chuyên gia (Ưu tiên cao, giảm tốc độ máy).\n"
+                        #     f"Lợi ích dự kiến (ROI): +{ai_pred.get('predicted_roi', 0):.1%}"
+                        # )
                         job_data['ml_note'] = "Expert Intervention"
                     else:
-                        st.info(
-                            "Đơn hàng tiêu chuẩn. Đề xuất sử dụng thuật toán tối ưu tự động (GA)."
-                        )
+                        # st.info(
+                        #     "Đơn hàng tiêu chuẩn. Đề xuất sử dụng thuật toán tối ưu tự động (GA)."
+                        # )
                         job_data['ml_note'] = "Standard GA"
                     
                     # Thêm vào hàng đợi
