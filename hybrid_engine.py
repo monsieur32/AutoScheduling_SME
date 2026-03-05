@@ -89,16 +89,15 @@ class HybridEngine:
             max_gen=50,   # Giảm xuống 50 thế hệ
             tightness_factor=1.5
         )
-        schedule = solver.solve()
-        
-        makespan = max((s['finish'] for s in schedule), default=0)
+        options = solver.solve()
         
         # Định dạng lại note cho schedule nếu priority cao
-        for s in schedule:
-            job_info = next((j for j in jobs if j['id'] == s['job_id']), {})
-            s['note'] = "Expert Intervention" if job_info.get('priority') == 'HIGH' else "Standard GA-VNS"
+        for opt in options:
+            for s in opt['schedule']:
+                job_info = next((j for j in jobs if j['id'] == s['job_id']), {})
+                s['note'] = "Expert Intervention" if job_info.get('priority') == 'HIGH' else "Standard GA-VNS"
 
-        return schedule, makespan
+        return options
 
     def solve(self, input_jobs, use_ml=True):
         print("--- PHASE 1: HYBRID PRE-PROCESSING ---")
@@ -107,10 +106,10 @@ class HybridEngine:
             print(l)
             
         print("\n--- PHASE 2: GENETIC ALGORITHM OPTIMIZATION ---")
-        schedule, makespan = self.run_ga_simulation(itemized_jobs)
-        print(f"Optimization Complete. Makespan: {makespan} mins")
+        options = self.run_ga_simulation(itemized_jobs)
+        print(f"Optimization Complete. Generated {len(options)} options.")
         
-        return schedule
+        return options
 
 if __name__ == "__main__":
     # Test Data simulating real input from App/Excel

@@ -23,6 +23,9 @@ if 'jobs_queue' not in st.session_state:
 if 'scheduled_jobs' not in st.session_state:
     st.session_state.scheduled_jobs = [] # Kết quả từ Hybrid Engine
 
+if 'schedule_options' not in st.session_state:
+    st.session_state.schedule_options = None # Các tùy chọn lịch trình trả về từ GA
+
 if 'ml_system' not in st.session_state:
     st.session_state.ml_system = FJSPML()
     # Thử tải mô hình đã huấn luyện
@@ -201,9 +204,31 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
                         st.write("Đang tải dữ liệu máy...")
                         time.sleep(0.3)
                         st.write("Đang phân tích ràng buộc kỹ thuật...")
-                        schedule = engine.solve(st.session_state.jobs_queue, use_ml=use_ml)
-                        st.session_state.scheduled_jobs = schedule
-                    st.success("Hoàn tất lập lịch")
+                        options = engine.solve(st.session_state.jobs_queue, use_ml=use_ml)
+                        
+                        # Store the options in session state instead of applying directly
+                        st.session_state.schedule_options = options
+                    st.success("Hoàn tất lập lịch. Vui lòng chọn phương án tối ưu bên dưới!")
+
+            # Hiển thị các phương án để người dùng chọn
+            if st.session_state.get('schedule_options') is not None:
+                st.markdown("#### LỰA CHỌN PHƯƠNG ÁN LỊCH TRÌNH")
+                options = st.session_state.schedule_options
+                
+                cols = st.columns(len(options))
+                for idx, (col, opt) in enumerate(zip(cols, options)):
+                    with col:
+                        st.markdown(f"**{opt['name']}**")
+                        metrics = opt['metrics']
+                        st.metric("Tổng Thời Gian (Makespan)", f"{metrics['makespan']} phút")
+                        st.metric("Thời gian Setup", f"{metrics['setup']} phút")
+                        
+                        # Nút bấm để chọn phương án này
+                        if st.button(f"Chọn Phương án {idx+1}", key=f"btn_choose_opt_{idx}", type="primary"):
+                            st.session_state.scheduled_jobs = opt['schedule']
+                            st.session_state.schedule_options = None # Hide options after selection
+                            st.success(f"Đã chọn {opt['name']}!")
+                            st.rerun() # Refresh to show gantt chart
         else:
             st.info("Chưa có đơn hàng nào trong hàng đợi.")
 
@@ -291,4 +316,11 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
                 
                 # Hành động
                 if c4.button("Xong", key=f"btn_{job['job_id']}"):
-                    st.toast(f"Đã hoàn thành {job['job_id']}")
+                    # Xóa job khỏi danh sách phân công hiện tại
+                    st.session_state.scheduled_jobs = [j for j in st.session_state.scheduled_jobs if j['job_id'] != job['job_id']]
+                    
+                    # Xóa job khỏi hàng đợi ban đầu (để không xuất hiện lại khi lập lịch lại)
+                    st.session_state.jobs_queue = [q for q in st.session_state.jobs_queue if q['id'] != job['job_id']]
+                    
+                    st.toast(f"Đã cập nhật hệ thống: Hoàn thành {job['job_id']}")
+                    st.rerun()

@@ -367,8 +367,16 @@ class GAVNSSolver:
         
         best_overall = None
         best_fitness = float('inf')
-        best_metrics = ()
-        best_schedule = None
+        
+        # We need to explicitly track the best individual for our 3 criteria.
+        best_balanced_ind = None
+        best_balanced_fit = float('inf')
+        
+        best_makespan_ind = None
+        best_makespan_val = float('inf')
+        
+        best_setup_ind = None
+        best_setup_val = float('inf')
         
         # Start Evolution
         for gen in range(self.max_gen):
@@ -377,11 +385,20 @@ class GAVNSSolver:
                 fit, mk, tst, tardy, sched = self.decode_and_evaluate(ind)
                 scored_pop.append((fit, ind, mk, tst, tardy, sched))
                 
-                if fit < best_fitness:
-                    best_fitness = fit
-                    best_overall = ind
-                    best_metrics = (mk, tst, tardy)
-                    best_schedule = sched
+                # Balanced (best fitness)
+                if fit < best_balanced_fit:
+                    best_balanced_fit = fit
+                    best_balanced_ind = (fit, ind, mk, tst, tardy, sched)
+                    
+                # Makespan Optimized (Speed)
+                if mk < best_makespan_val or (mk == best_makespan_val and fit < (best_makespan_ind[0] if best_makespan_ind else float('inf'))):
+                    best_makespan_val = mk
+                    best_makespan_ind = (fit, ind, mk, tst, tardy, sched)
+                    
+                # Setup Optimized (Cost)
+                if tst < best_setup_val or (tst == best_setup_val and fit < (best_setup_ind[0] if best_setup_ind else float('inf'))):
+                    best_setup_val = tst
+                    best_setup_ind = (fit, ind, mk, tst, tardy, sched)
                     
             # Selection (Tournament)
             scored_pop.sort(key=lambda x: x[0])
@@ -416,6 +433,45 @@ class GAVNSSolver:
                     
             pop = new_pop
             
-        print(f"GA-VNS Completed. Best Fitness: {best_fitness:.2f} | Makespan: {best_metrics[0]} | Setup: {best_metrics[1]} | Tardiness: {best_metrics[2]}")
-        return best_schedule
+        # Collect distinct options
+        options = []
+        seen_schedules = set()
+        
+        def add_option(name, ind_tuple):
+            if not ind_tuple: return
+            fit, ind, mk, tst, tardy, sched = ind_tuple
+            
+            # Create a simple hash/string of the schedule to verify uniqueness
+            sched_hash = "".join([f"{s['job_id']}_{s['machine']}_{s['start']}" for s in sched])
+            if sched_hash not in seen_schedules:
+                seen_schedules.add(sched_hash)
+                options.append({
+                    "name": name,
+                    "schedule": sched,
+                    "metrics": {
+                        "fitness": round(fit, 2),
+                        "makespan": mk,
+                        "setup": tst,
+                        "tardiness": tardy
+                    }
+                })
+
+        # Add the options in order of preference
+        add_option("Phương án Cân bằng (Balanced)", best_balanced_ind)
+        add_option("Phương án Nhanh nhất (Speed/Makespan)", best_makespan_ind)
+        add_option("Phương án Tối ưu Gá đặt (Cost/Setup)", best_setup_ind)
+        
+        # Fill up to 3 options if we didn't find enough unique ones
+        idx = 0
+        while len(options) < 3 and idx < len(scored_pop):
+            # scored_pop is sorted by fitness
+            add_option(f"Phương án Phụ (Thay thế {len(options)+1})", scored_pop[idx])
+            idx += 1
+            
+        print(f"GA-VNS Completed. Generated {len(options)} options.")
+        for i, opt in enumerate(options):
+            m = opt['metrics']
+            print(f" Opt {i+1}: {opt['name']} | Fit: {m['fitness']} | Mk: {m['makespan']} | Setup: {m['setup']} | Tardy: {m['tardiness']}")
+            
+        return options
 
