@@ -66,6 +66,7 @@
         "CNCTNC0001": {
             "name": "WJ-01 (HEAD3020BA)",
             "type": "Waterjet",
+            "status": "On",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -148,6 +149,7 @@
         "CNCTNC0002": {
             "name": "WJ-02 (HEAD3020BA-F)",
             "type": "Waterjet",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -157,6 +159,7 @@
         "CNCTNC0003": {
             "name": "WJ-03 (HEAD3020BA-F)",
             "type": "Waterjet",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -166,6 +169,7 @@
         "CNCTNC0004": {
             "name": "WJ-04 (HEAD3020BA-F)",
             "type": "Waterjet",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -175,6 +179,7 @@
         "CNCTNC0005": {
             "name": "WJ-05",
             "type": "Waterjet",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -184,6 +189,7 @@
         "CNCTNC0007": {
             "name": "WJ 5 trục",
             "type": "Waterjet_5axis",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Cut_contour"
@@ -193,6 +199,7 @@
         "CNCCCC0001": {
             "name": "Cắt cầu 1",
             "type": "BridgeSaw",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Chamfer_45"
@@ -275,6 +282,7 @@
         "CNCCCC0002": {
             "name": "Cắt cầu 5 trục YQ5H-3624",
             "type": "BridgeSaw_5axis",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Chamfer_45",
@@ -285,6 +293,7 @@
         "CNCCCC0003": {
             "name": "Cắt cầu 5 trục YQ5H-3624-2",
             "type": "BridgeSaw_5axis",
+            "status": "active",
             "capabilities": [
                 "Cut_straight",
                 "Chamfer_45",
@@ -295,6 +304,7 @@
         "CNCTRT0001": {
             "name": "CMS-01",
             "type": "CNC_Router",
+            "status": "active",
             "capabilities": [
                 "Edge_simple",
                 "Edge_complex"
@@ -323,6 +333,7 @@
         "CNCTRT0002": {
             "name": "MÁY CMS - 02 (TN-C/TN-S 8517)",
             "type": "CNC_Router",
+            "status": "active",
             "capabilities": [
                 "Chamfer_45",
                 "Edge_simple",
@@ -333,6 +344,7 @@
         "CATVTC0001": {
             "name": "Máy líp 45",
             "type": "Chamfer",
+            "status": "Off",
             "capabilities": [
                 "Chamfer_45"
             ],
@@ -341,6 +353,7 @@
         "CNCKIH0001": {
             "name": "Máy khí nén",
             "type": "Pneumatic",
+            "status": "maintenance",
             "capabilities": [],
             "speed_matrix": {}
         }

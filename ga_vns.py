@@ -106,7 +106,7 @@ class GAVNSSolver:
         # Mô phỏng Sequence-Dependent Setup Time.
         # Nếu có setup_matrix trong máy thì dùng, nếu không thì trả về setup mặc định.
         if prev_job_id is None or prev_job_id == curr_job_id:
-            return 0
+            return 5
         machine_info = self.machines_data.get(m_id, {})
         setup_matrix = machine_info.get("setup_matrix", {})
         if prev_job_id in setup_matrix and curr_job_id in setup_matrix[prev_job_id]:
@@ -114,7 +114,7 @@ class GAVNSSolver:
         
         # Sequence ngẫu nhiên giả lập nếu ko có (trong thực tế lấy từ data)
         # Setup = 5 phút nếu đổi job
-        return 5
+        return 10
 
     # --- INITIALIZATION STRATEGIES ---
     

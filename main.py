@@ -282,45 +282,137 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
 # TAB 3: CÔNG NHÂN
 # ==========================================
 elif tab_selection == "3. Giao diện Máy (Công nhân)":
-    st.markdown("### GIAO DIỆN VẬN HÀNH MÁY")
+    st.markdown("### GIAO DIỆN VẬN HÀNH MÁY (SƠ ĐỒ XƯỞNG)")
     
-    if len(st.session_state.scheduled_jobs) == 0:
-        st.info("Hiện tại chưa có lịch phân công.")
+    if 'selected_worker_machine' not in st.session_state:
+        st.session_state.selected_worker_machine = None
+
+    import json
+    try:
+        with open("cleaned_master_data.json", "r", encoding="utf-8") as f:
+            md_json = json.load(f)
+        all_machines = md_json.get("machines", {})
+    except Exception:
+        all_machines = {}
+
+    if not all_machines:
+        st.warning("Không tải được dữ liệu máy móc từ Master Data!")
+        st.session_state.selected_worker_machine = None
     else:
-        machines = list(set([j['machine'] for j in st.session_state.scheduled_jobs]))
-        selected_machine = st.selectbox("Chọn máy vận hành:", machines)
+        # Lấy danh sách toàn bộ máy từ Master Data
+        machines = list(all_machines.keys())
+        machines.sort()
         
-        st.markdown(f"#### Danh sách công việc: {selected_machine}")
+        st.markdown("#### Sơ đồ các máy (Quản lý Bàn)")
         
-        my_jobs = [j for j in st.session_state.scheduled_jobs if j['machine'] == selected_machine]
-        my_jobs = sorted(my_jobs, key=lambda x: x['start'])
+        # Grid layout (4 cột)
+        cols_per_row = 4
         
-        # Sử dụng layout dạng bảng đơn giản
-        for job in my_jobs:
-            with st.container(border=True):
-                c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
-                
-                # Job ID
-                c1.markdown(f"**{job['job_id']}**")
-                
-                # Thời gian
-                start_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['start'])).strftime('%H:%M')
-                end_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['finish'])).strftime('%H:%M')
-                c2.write(f"{start_str} - {end_str}")
-                
-                # Ghi chú
-                if job['note'] == "Expert Intervention":
-                    c3.write("Lưu ý: Chạy chế độ an toàn")
-                else:
-                    c3.write("Chế độ tiêu chuẩn")
-                
-                # Hành động
-                if c4.button("Xong", key=f"btn_{job['job_id']}"):
-                    # Xóa job khỏi danh sách phân công hiện tại
-                    st.session_state.scheduled_jobs = [j for j in st.session_state.scheduled_jobs if j['job_id'] != job['job_id']]
+        for i in range(0, len(machines), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for j, col in enumerate(cols):
+                if i + j < len(machines):
+                    machine = machines[i+j]
+                    machine_info = all_machines[machine]
+                    machine_status = machine_info.get('status', 'On')
                     
-                    # Xóa job khỏi hàng đợi ban đầu (để không xuất hiện lại khi lập lịch lại)
-                    st.session_state.jobs_queue = [q for q in st.session_state.jobs_queue if q['id'] != job['job_id']]
+                    machine_jobs = [jb for jb in st.session_state.scheduled_jobs if jb['machine'] == machine]
+                    job_count = len(machine_jobs)
                     
-                    st.toast(f"Đã cập nhật hệ thống: Hoàn thành {job['job_id']}")
-                    st.rerun()
+                    if machine_status == 'Maintenance':
+                        status_text = "Bảo trì"
+                    elif machine_status == 'Off':
+                        status_icon = "⚪"
+                        status_text = "Ngoại tuyến"
+                    else:
+                        if job_count > 3:
+                            status_icon = "🔴"
+                            status_text = "Quá tải"
+                        elif job_count > 0:
+                            status_icon = "🟡"
+                            status_text = f"Đang chờ: {job_count} đơn"
+                        else:
+                            status_icon = "🟢"
+                            status_text = "Rảnh"
+                        
+                    card_label = f"{status_icon} {machine}\n\n{status_text}"
+                    
+                    # Nút chọn máy (mô phỏng chọn bàn)
+                    if col.button(card_label, key=f"btn_mach_{machine}", use_container_width=True):
+                        st.session_state.selected_worker_machine = machine
+                        st.rerun()
+
+        st.markdown("---")
+        
+        selected_machine = st.session_state.selected_worker_machine
+        
+        if selected_machine and selected_machine in machines:
+            machine_name = all_machines[selected_machine].get('name', selected_machine)
+            st.markdown(f"####Chi tiết công việc: {selected_machine} ({machine_name})")
+            
+            # Khối điều khiển trạng thái cho Quản lý
+            with st.expander("Cài đặt Trạng thái Máy", expanded=False):
+                from utils_masterdata import set_machine_status
+                curr_status = all_machines[selected_machine].get('status', 'On')
+                status_opts = ["On", "Off", "Maintenance"]
+                idx = status_opts.index(curr_status) if curr_status in status_opts else 0
+                
+                c_st1, c_st2 = st.columns([3, 1])
+                with c_st1:
+                    new_st = st.selectbox("Cập nhật trạng thái mới cho máy:", status_opts, index=idx, key=f"status_sel_{selected_machine}")
+                with c_st2:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("Lưu Trạng Thái", type="primary", use_container_width=True):
+                        if new_st != curr_status:
+                            with st.spinner("Đang ghi đè file định dạng gốc..."):
+                                success = set_machine_status(selected_machine, new_st)
+                                if success:
+                                    st.success("Cập nhật thành công! Đang tải lại...")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error("Có lỗi xảy ra khi lưu trạng thái.")
+
+            my_jobs = [j for j in st.session_state.scheduled_jobs if j['machine'] == selected_machine]
+            my_jobs = sorted(my_jobs, key=lambda x: x['start'])
+            
+            if len(my_jobs) == 0:
+                st.success(f"{selected_machine} hiện không có công việc nào!")
+            else:
+                for idx, job in enumerate(my_jobs):
+                    with st.container(border=True):
+                        c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
+                        
+                        # Job ID & Tình trạng rút gọn
+                        if idx == 0:
+                            c1.markdown(f"**{job['job_id']}**  \n*(Đang thực thi)*")
+                        else:
+                            c1.markdown(f"**{job['job_id']}**  \n*(Đang chờ)*")
+                        
+                        # Thời gian (mô phỏng từ mốc 07:00)
+                        start_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['start'])).strftime('%H:%M')
+                        end_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['finish'])).strftime('%H:%M')
+                        duration = job['finish'] - job['start']
+                        
+                        c2.write(f"🕒 {start_str} - {end_str} ({duration} phút)")
+                        if idx == 0:
+                            # Mô phỏng tiến độ cho job đầu tiên
+                            c2.progress(0.4) 
+                            
+                        # Ghi chú / Trạng thái
+                        if job['note'] == "Expert Intervention":
+                            c3.warning("Chạy chế độ an toàn")
+                        else:
+                            c3.info("Chế độ tiêu chuẩn")
+                        
+                        # Hành động
+                        if c4.button(" Hoàn Thành", key=f"btn_{job['job_id']}", type="primary" if idx == 0 else "secondary"):
+                            # Xóa job khỏi danh sách phân công
+                            st.session_state.scheduled_jobs = [j for j in st.session_state.scheduled_jobs if j['job_id'] != job['job_id']]
+                            # Xóa job khỏi hàng đợi
+                            st.session_state.jobs_queue = [q for q in st.session_state.jobs_queue if q['id'] != job['job_id']]
+                            
+                            st.toast(f" Máy {selected_machine} đã hoàn thành {job['job_id']}!")
+                            st.rerun()
+        elif selected_machine:
+            st.success("Chọn máy khác phía trên!")

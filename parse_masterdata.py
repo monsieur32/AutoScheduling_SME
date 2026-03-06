@@ -33,9 +33,16 @@ def parse_master_data():
         # Khởi tạo
         for _, row in df_mac.iterrows():
             m_id = row['machine_id']
+            status = 'On'
+            if 'status' in df_mac.columns:
+                val = row['status']
+                if pd.notna(val):
+                    status = str(val).strip()
+            
             machines[m_id] = {
                 "name": row['machine_name'],
                 "type": row['machine_type'],
+                "status": status,
                 "capabilities": [],
                 "speed_matrix": {}
             }
