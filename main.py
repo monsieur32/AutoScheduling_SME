@@ -55,121 +55,123 @@ st.sidebar.markdown("---")
 if tab_selection == "1. Nhập liệu đơn hàng":
     st.markdown("### NHẬP ĐƠN HÀNG MỚI")
     
-    with st.container(border=True):
-        col1, col2 = st.columns([1, 1.5], gap="large")
+    import json
+    try:
+        with open("cleaned_master_data.json", "r", encoding="utf-8") as f:
+            md_json = json.load(f)
+        process_map = md_json.get("process_map", {})
+    except Exception:
+        process_map = {}
         
-        with col1:
-            st.markdown("#### Thông tin đầu vào")
-            uploaded_files = st.file_uploader("Tải lên bản vẽ (.dxf)", type=['dxf'], accept_multiple_files=True)
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                material = st.selectbox("Nhóm Vật Liệu", ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], index=2)
-            with c2:
-                quantity = st.number_input("Số lượng (tấm)", min_value=1, value=1)
-                
-            c3, c4 = st.columns(2)
-            with c3:
-                # Mặc định due date là ngày mai, lúc 17:00
-                default_due = datetime.now() + timedelta(days=1)
-                due_date_input = st.date_input("Hạn chót (Due Date)", value=default_due.date())
-                due_time_input = st.time_input("Giờ giao", value=datetime.strptime("17:00", "%H:%M").time())
-                due_datetime = datetime.combine(due_date_input, due_time_input)
-            with c4:
-                priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
-            
-            import json
-            try:
-                with open("cleaned_master_data.json", "r", encoding="utf-8") as f:
-                    md_json = json.load(f)
-                process_map = md_json.get("process_map", {})
-            except Exception:
-                process_map = {}
-                
-            # Fallback in case JSON is missing or map is empty
-            if not process_map:
-                process_map = {
-                    "Cắt thô (Standard)": 1,
-                    "Cắt + Đánh bóng (Polishing)": 2,
-                    "Cắt + Soi cạnh + Đánh bóng (Complex)": 3
-                }
-            
-            process_options = list(process_map.keys())
-            process_type = st.selectbox("Quy trình Gia công", process_options)
+    # Fallback in case JSON is missing or map is empty
+    if not process_map:
+        process_map = {
+            "Cắt thô (Standard)": 1,
+            "Cắt + Đánh bóng (Polishing)": 2,
+            "Cắt + Soi cạnh + Đánh bóng (Complex)": 3
+        }
+    
+    process_options = list(process_map.keys())
+
+    with st.container(border=True):
+        st.markdown("#### Thiết lập chung cho Đơn hàng")
+        c3, c4 = st.columns(2)
+        with c3:
+            default_due = datetime.now() + timedelta(days=1)
+            due_date_input = st.date_input("Hạn chót (Due Date)", value=default_due.date())
+            due_time_input = st.time_input("Giờ giao", value=datetime.strptime("17:00", "%H:%M").time())
+            due_datetime = datetime.combine(due_date_input, due_time_input)
+        with c4:
+            priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
+
+        st.markdown("#### Tải lên Bản vẽ & Phân bổ Công việc")
+        uploaded_files = st.file_uploader("Tải lên nhiều bản vẽ (.dxf)", type=['dxf'], accept_multiple_files=True)
+        
+        if uploaded_files:
+            file_configs = []
+            st.markdown("#### Cấu hình cho từng Bản vẽ")
+            for idx, file in enumerate(uploaded_files):
+                with st.expander(f"Bản vẽ {idx+1}: {file.name}", expanded=True):
+                    f_col1, f_col2, f_col3 = st.columns([1, 1, 2])
+                    with f_col1:
+                        material = st.selectbox("Nhóm Vật Liệu", ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], index=2, key=f"mat_{file.name}_{idx}")
+                    with f_col2:
+                        quantity = st.number_input("Số lượng (tấm)", min_value=1, value=1, key=f"qty_{file.name}_{idx}")
+                    with f_col3:
+                        process_type = st.selectbox("Quy trình Gia công", process_options, key=f"proc_{file.name}_{idx}")
+                    
+                    file_configs.append({
+                        "file": file,
+                        "material": material,
+                        "quantity": quantity,
+                        "process_type": process_type
+                    })
             
             st.markdown("<br>", unsafe_allow_html=True)
-            btn_analyze = st.button("Phân tích & Thêm vào hàng đợi", use_container_width=True)
+            btn_analyze = st.button("Phân tích & Thêm tất cả vào hàng đợi", use_container_width=True, type="primary")
 
-        with col2:
-            st.markdown("#### Kết quả phân tích")
-            
-            if uploaded_files and btn_analyze:
-                # 1. Lưu file tạm
-                temp_paths = []
+            if btn_analyze:
+                st.markdown("#### Kết quả phân tích")
                 os.makedirs("data", exist_ok=True)
-                for file in uploaded_files:
+                
+                total_added = 0
+                for config in file_configs:
+                    file = config["file"]
+                    
+                    # 1. Lưu file tạm
                     temp_path = os.path.join("data", file.name)
                     with open(temp_path, "wb") as f:
                         f.write(file.getbuffer())
-                    temp_paths.append(temp_path)
-                
-                # 2. Phân tích DXF
-                with st.expander("Đang xử lý dữ liệu DXF..."):
-                    dxf_info = extract_cutting_info(temp_paths)
                     
-                if dxf_info['status'] == 'success':
-                    # Hiển thị chỉ số gọn gàng
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("Tổng chiều dài (mm)", f"{dxf_info['total_len_mm']}")
-                    m2.metric("Số lượng file", f"{dxf_info['files_processed']}")
-                    m3.metric("Tỷ lệ phức tạp", f"{dxf_info['complexity_ratio']}")
-                    
-                    st.divider()
-                    
-                    # 3. Dự đoán AI và chuẩn bị Job Data
-                    job_data = {
-                        "id": f"JOB-{len(st.session_state.jobs_queue)+1:03d}",
-                        "material_group": material,
-                        "process_steps": len(process_map[process_type]),
-                        "size_mm": dxf_info['total_len_mm'], 
-                        "complexity": dxf_info['complexity_ratio'],
-                        "quantity": quantity,
-                        "operations": process_map[process_type],
-                        "due_date": due_datetime,
-                        "priority": priority_input
-                    }
-                    
-                    ai_pred = st.session_state.ml_system.predict_adjust({
-                        "process_steps": job_data['process_steps'],
-                        "material_group": job_data['material_group'],
-                        "size_mm": job_data['size_mm'],
-                        "dxf_complexity": job_data['complexity']
-                    })
-                    
-                    # 4. Hiển thị đánh giá
-                    st.markdown("**Đánh giá**")
-                    if ai_pred.get('use_expert_rule'):
-                        # st.warning(
-                        #     f"Phát hiện rủi ro cao (Đá cứng/Quy trình dài).\n"
-                        #     f"Đề xuất: Kích hoạt chế độ chuyên gia (Ưu tiên cao, giảm tốc độ máy).\n"
-                        #     f"Lợi ích dự kiến (ROI): +{ai_pred.get('predicted_roi', 0):.1%}"
-                        # )
-                        job_data['ml_note'] = "Expert Intervention"
-                    else:
-                        # st.info(
-                        #     "Đơn hàng tiêu chuẩn. Đề xuất sử dụng thuật toán tối ưu tự động (GA)."
-                        # )
-                        job_data['ml_note'] = "Standard GA"
-                    
-                    # Thêm vào hàng đợi
-                    st.session_state.jobs_queue.append(job_data)
-                    st.toast(f"Đã thêm {job_data['id']} vào hàng đợi.")
-                    
-                    if dxf_info.get("warnings"):
-                        st.warning("Cảnh báo: " + "; ".join(dxf_info["warnings"]))
+                    # 2. Phân tích DXF
+                    with st.spinner(f"Đang xử lý {file.name}..."):
+                        # Xử lý từng file riêng biệt
+                        dxf_info = extract_cutting_info([temp_path])
                         
-                else:
-                    st.error(f"Lỗi: {dxf_info['message']}")
+                    if dxf_info['status'] == 'success':
+                        # Hiển thị kết quả riêng cho file này
+                        st.success(f"**{file.name}**: Dài {dxf_info['total_len_mm']}mm, Phức tạp {dxf_info['complexity_ratio']}")
+                        
+                        # 3. Dự đoán AI và chuẩn bị Job Data
+                        # Tạo Job ID duy nhất dù có trùng tên ban đầu
+                        ts = int(time.time() * 1000) % 10000 
+                        short_name = file.name[:6].replace(" ", "_")
+                        job_id = f"JOB-{len(st.session_state.jobs_queue)+1:03d}_{short_name}_{ts}"
+                        
+                        job_data = {
+                            "id": job_id,
+                            "material_group": config["material"],
+                            "process_steps": len(process_map[config["process_type"]]),
+                            "size_mm": dxf_info['total_len_mm'], 
+                            "complexity": dxf_info['complexity_ratio'],
+                            "quantity": config["quantity"],
+                            "operations": process_map[config["process_type"]],
+                            "due_date": due_datetime,
+                            "priority": priority_input
+                        }
+                        
+                        ai_pred = st.session_state.ml_system.predict_adjust({
+                            "process_steps": job_data['process_steps'],
+                            "material_group": job_data['material_group'],
+                            "size_mm": job_data['size_mm'],
+                            "dxf_complexity": job_data['complexity']
+                        })
+                        
+                        job_data['ml_note'] = "Expert Intervention" if ai_pred.get('use_expert_rule') else "Standard GA"
+                        
+                        # Thêm vào hàng đợi
+                        st.session_state.jobs_queue.append(job_data)
+                        total_added += 1
+                        
+                        if dxf_info.get("warnings"):
+                            st.warning(f"Cảnh báo ({file.name}): " + "; ".join(dxf_info["warnings"]))
+                            
+                    else:
+                        st.error(f"Lỗi khi đọc {file.name}: {dxf_info['message']}")
+                
+                if total_added > 0:
+                    st.toast(f"Đã thêm thành công {total_added} bản vẽ vào hàng đợi.")
+                    # Automatically update task.md internally
 
 # ==========================================
 # TAB 2: DASHBOARD
