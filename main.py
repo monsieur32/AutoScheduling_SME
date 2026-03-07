@@ -396,7 +396,7 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
                         end_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['finish'])).strftime('%H:%M')
                         duration = job['finish'] - job['start']
                         
-                        c2.write(f"🕒 {start_str} - {end_str} ({duration} phút)")
+                        c2.write(f" {start_str} - {end_str} ({duration} phút)")
                         if idx == 0:
                             # Mô phỏng tiến độ cho job đầu tiên
                             c2.progress(0.4) 
