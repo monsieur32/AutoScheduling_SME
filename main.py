@@ -95,11 +95,11 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         st.markdown("#### Thiết lập chung cho Đơn hàng")
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            project_name_input = st.text_input("Tên Công trình", placeholder="Ví dụ: VINHOME")
+            project_name_input = st.text_input("Tên Công trình")
         with c2:
-            project_code_input = st.text_input("Mã Công trình", placeholder="Ví dụ: VH")
+            project_code_input = st.text_input("Mã Công trình")
         with c3:
-            hexcode_input = st.text_input("Mã Hexcode (Mã phụ của Dự án)", placeholder="Ví dụ: VH0122")
+            hexcode_input = st.text_input("Mã Hexcode (Mã phụ của Dự án)")
         with c4:
             priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
 
