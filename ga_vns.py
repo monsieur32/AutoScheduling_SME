@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 
 class GAVNSSolver:
-    def __init__(self, jobs, machines_data, calculate_duration_fn, pop_size=100, max_gen=100, tightness_factor=1.5):
+    def __init__(self, jobs, machines_data, calculate_duration_fn, pop_size=100, max_gen=100, tightness_factor=1.5, initial_machine_avail=None, initial_machine_last_job=None):
         """
         Khởi tạo bộ giải GA-VNS cho bài toán Flexible Job Shop Scheduling.
         jobs: List các job cần lập lịch.
@@ -13,6 +13,8 @@ class GAVNSSolver:
         pop_size: Kích thước quần thể.
         max_gen: Số thế hệ tối đa.
         tightness_factor: Hệ số để tính Due Date (dựa theo phương pháp TWK).
+        initial_machine_avail: Tùy chọn truyền vào state gốc khi cần Rescheduling.
+        initial_machine_last_job: Tùy chọn state job cuối trên máy phục vụ setup time cho Rescheduling.
         """
         self.jobs = jobs
         self.machines_data = machines_data
@@ -20,6 +22,9 @@ class GAVNSSolver:
         self.pop_size = pop_size
         self.max_gen = max_gen
         self.tightness_factor = tightness_factor
+        
+        self.initial_machine_avail = initial_machine_avail or {}
+        self.initial_machine_last_job = initial_machine_last_job or {}
         
         self.num_jobs = len(jobs)
         self.job_dict = {job['id']: job for job in jobs}
@@ -29,11 +34,12 @@ class GAVNSSolver:
         # Tiền xử lý các lựa chọn máy cho từng nguyên công của job
         self.job_ops = [] # Lưu danh sách dạng (job_idx, op_idx, job_id)
         self.job_due_dates = {}
+        self.job_start_times = {} # [NEW] Lưu giữ thông tin thời gian bắt đầu
         self.job_priority_weight = {}
         self.total_work_content = {}
         
         # Precompute processing times and eligible machines
-        self.processing_times = {} # (job_id, op_idx) -> {machine_id: duration}
+        self.processing_times = {} 
         
         for job_idx, job in enumerate(self.jobs):
             twk = 0
@@ -83,12 +89,22 @@ class GAVNSSolver:
                 
             self.total_work_content[job_id] = twk
             
-            # Tính due date: Nếu user chỉ định thì dùng, không thì tự tính
+            # Tính due date / start date: Dùng thư viện datetime
+            import datetime
+            base_time = datetime.datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
+            
+            # Start time 
+            if 'start_time' in job:
+                # Đổi start_date ra phút tương đối so với base_time
+                start_diff = job['start_time'] - base_time
+                start_mins = int(start_diff.total_seconds() / 60)
+                # Đảm bảo start_mins không âm nếu chọn quá khứ
+                self.job_start_times[job_id] = max(0, start_mins)
+            else:
+                self.job_start_times[job_id] = 0
+
+            # Due time
             if 'due_date' in job:
-                # Đổi due_date (datetime object) thành số phút tương đối so với t=0
-                # Giả sử t=0 là bây giờ
-                import datetime
-                base_time = datetime.datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
                 diff = job['due_date'] - base_time
                 self.job_due_dates[job_id] = int(diff.total_seconds() / 60)
             else:
@@ -107,13 +123,28 @@ class GAVNSSolver:
         # Nếu có setup_matrix trong máy thì dùng, nếu không thì trả về setup mặc định.
         if prev_job_id is None or prev_job_id == curr_job_id:
             return 5
+            
+        # Kiểm tra xem 2 job có thuộc cùng 1 lô (master job) không
+        # Ví dụ: JOB-001.1_abc và JOB-001.2_xyz -> cùng lô JOB-001
+        def get_master_id(j_id):
+            if j_id and '.' in j_id:
+                return j_id.split('.')[0]
+            return j_id
+
+        prev_master = get_master_id(prev_job_id)
+        curr_master = get_master_id(curr_job_id)
+        
+        if prev_master == curr_master:
+            # Cùng 1 lô đơn hàng, thời gian Setup chuyển tiếp ngắn hơn
+            return 5
+            
         machine_info = self.machines_data.get(m_id, {})
         setup_matrix = machine_info.get("setup_matrix", {})
         if prev_job_id in setup_matrix and curr_job_id in setup_matrix[prev_job_id]:
             return setup_matrix[prev_job_id][curr_job_id]
         
         # Sequence ngẫu nhiên giả lập nếu ko có (trong thực tế lấy từ data)
-        # Setup = 5 phút nếu đổi job
+        # Setup = 10 phút nếu đổi job hoàn toàn mới
         return 10
 
     # --- INITIALIZATION STRATEGIES ---
@@ -196,8 +227,15 @@ class GAVNSSolver:
         os = individual['OS']
         
         machine_avail = defaultdict(int)
+        for m_id, v in self.initial_machine_avail.items():
+            machine_avail[m_id] = v
+            
         machine_last_job = defaultdict(lambda: None)
-        job_avail = defaultdict(int)
+        for m_id, v in self.initial_machine_last_job.items():
+            machine_last_job[m_id] = v
+            
+        # Khởi tạo job_avail bằng start_time của từng job thay vì 0
+        job_avail = {job_id: self.job_start_times.get(job_id, 0) for job_id in self.job_dict.keys()}
         
         op_counts = defaultdict(int)
         
@@ -471,7 +509,9 @@ class GAVNSSolver:
         print(f"GA-VNS Completed. Generated {len(options)} options.")
         for i, opt in enumerate(options):
             m = opt['metrics']
-            print(f" Opt {i+1}: {opt['name']} | Fit: {m['fitness']} | Mk: {m['makespan']} | Setup: {m['setup']} | Tardy: {m['tardiness']}")
+            # Chú ý: Cắt bỏ các ký tự dấu tiếng Việt để tránh lỗi UnicodeEncodeError trên Console Windows
+            safe_name = opt['name'].encode('ascii', 'ignore').decode('ascii')
+            print(f" Opt {i+1}: {safe_name} | Fit: {m['fitness']} | Mk: {m['makespan']} | Setup: {m['setup']} | Tardy: {m['tardiness']}")
             
         return options
 

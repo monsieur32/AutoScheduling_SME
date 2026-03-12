@@ -4,11 +4,36 @@ import json
 import copy
 from ml_module import FJSPML
 from ga_vns import GAVNSSolver
+from database.models import get_engine, Machine
+from sqlalchemy.orm import sessionmaker
 
 class HybridEngine:
-    def __init__(self, master_data_path='cleaned_master_data.json', ml_model_path='models'):
-        with open(master_data_path, 'r', encoding='utf-8') as f:
-            self.master_data = json.load(f)
+    def __init__(self, db_path='sqlite:///master_data_v2.db', ml_model_path='models'):
+        engine = get_engine(db_path)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        self.master_data = {'machines': {}}
+        
+        # Pull all machines and relationships into dictionary to maintain compatibility with GA_VNS
+        machines_db = session.query(Machine).all()
+        for m in machines_db:
+            caps = [c.capability_name for c in m.capabilities]
+            speed_matrix = {}
+            for s in m.speeds:
+                if s.material_group_code not in speed_matrix:
+                    speed_matrix[s.material_group_code] = {}
+                speed_matrix[s.material_group_code][s.size_category] = s.speed_value
+                
+            self.master_data['machines'][m.id] = {
+                'name': m.name,
+                'type': m.machine_type,
+                'status': m.status,
+                'capabilities': caps,
+                'speed_matrix': speed_matrix
+            }
+            
+        session.close()
         
         self.ml = FJSPML(model_path=ml_model_path)
         self.ml.load_models()
@@ -76,7 +101,7 @@ class HybridEngine:
         # Thêm 5 phút thời gian gá đặt
         return int(size_mm / speed) + 5
 
-    def run_ga_simulation(self, jobs):
+    def run_ga_simulation(self, jobs, initial_machine_avail=None, initial_machine_last_job=None):
         """
         Sử dụng thuật toán GA-VNS để thay thế cho mô phỏng Greedy cũ.
         """
@@ -87,7 +112,9 @@ class HybridEngine:
             calculate_duration_fn=self.calculate_duration,
             pop_size=50,  # Giảm xuống 50 để chạy nhanh trên UI
             max_gen=50,   # Giảm xuống 50 thế hệ
-            tightness_factor=1.5
+            tightness_factor=1.5,
+            initial_machine_avail=initial_machine_avail,
+            initial_machine_last_job=initial_machine_last_job
         )
         options = solver.solve()
         
@@ -99,14 +126,18 @@ class HybridEngine:
 
         return options
 
-    def solve(self, input_jobs, use_ml=True):
+    def solve(self, input_jobs, use_ml=True, initial_machine_avail=None, initial_machine_last_job=None):
         print("--- PHASE 1: HYBRID PRE-PROCESSING ---")
         itemized_jobs, logs = self.apply_expert_constraints(input_jobs, use_ml=use_ml)
         for l in logs:
             print(l)
             
         print("\n--- PHASE 2: GENETIC ALGORITHM OPTIMIZATION ---")
-        options = self.run_ga_simulation(itemized_jobs)
+        options = self.run_ga_simulation(
+            itemized_jobs, 
+            initial_machine_avail=initial_machine_avail, 
+            initial_machine_last_job=initial_machine_last_job
+        )
         print(f"Optimization Complete. Generated {len(options)} options.")
         
         return options
