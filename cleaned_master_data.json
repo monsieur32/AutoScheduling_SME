@@ -353,7 +353,7 @@
         "CNCKIH0001": {
             "name": "Máy khí nén",
             "type": "Pneumatic",
-            "status": "maintenance",
+            "status": "Off",
             "capabilities": [],
             "speed_matrix": {}
         }

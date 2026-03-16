@@ -16,9 +16,10 @@ def extract_cutting_info(dxf_path):
     
     total_straight_len = 0.0
     total_curved_len = 0.0
-    total_entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
+    total_entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0, "TEXT": 0, "MTEXT": 0}
     files_processed = 0
     warnings_list = []
+    all_texts = []
 
     for path in file_paths:
         try:
@@ -27,7 +28,7 @@ def extract_cutting_info(dxf_path):
             
             straight_len = 0.0
             curved_len = 0.0
-            entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0}
+            entity_counts = {"LINE": 0, "ARC": 0, "CIRCLE": 0, "POLYLINE": 0, "LWPOLYLINE": 0, "SPLINE": 0, "TEXT": 0, "MTEXT": 0}
             
             # Duyệt qua các thực thể trong không gian mô hình
             for entity in msp:
@@ -105,6 +106,14 @@ def extract_cutting_info(dxf_path):
                         straight_len += l
                     entity_counts["POLYLINE"] += 1
                     
+                elif entity_type == 'TEXT':
+                    all_texts.append(entity.dxf.text)
+                    entity_counts["TEXT"] += 1
+
+                elif entity_type == 'MTEXT':
+                    all_texts.append(entity.text)
+                    entity_counts["MTEXT"] += 1
+                    
                 # TODO: CÀI ĐẶT SPLINE
             
             total_straight_len += straight_len
@@ -131,6 +140,7 @@ def extract_cutting_info(dxf_path):
         "curved_len_mm": round(total_curved_len, 2),
         "complexity_ratio": round(total_curved_len / (total_straight_len + total_curved_len + 1e-9), 2),
         "entity_counts": total_entity_counts,
+        "texts": all_texts,
         "files_processed": files_processed,
         "warnings": warnings_list
     }

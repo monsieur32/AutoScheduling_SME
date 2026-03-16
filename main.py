@@ -67,11 +67,9 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         Session = sessionmaker(bind=engine)
         session = Session()
         
-        # Load unique process names preserving order by step_order roughly, or just get unique
         proc_defs = session.query(ProcessDefinition.process_name).distinct().all()
         process_map = {p[0]: [] for p in proc_defs}
         
-        # Reconstruct mapping for the UI
         all_steps = session.query(ProcessDefinition).all()
         for step in all_steps:
             process_map[step.process_name].append(step.capability_required)
@@ -81,7 +79,6 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         print(f"Error loading DB: {e}")
         process_map = {}
         
-    # Fallback in case JSON is missing or map is empty
     if not process_map:
         process_map = {
             "Cắt thô (Standard)": 1,
@@ -115,59 +112,88 @@ if tab_selection == "1. Nhập liệu đơn hàng":
             due_time_input = st.time_input("Giờ giao", value=datetime.strptime("17:00", "%H:%M").time())
             due_datetime = datetime.combine(due_date_input, due_time_input)
 
-        st.markdown("#### Tải lên Bản vẽ & Phân bổ Công việc")
+        st.markdown("#### Tải lên Bản vẽ & Phân tích")
         uploaded_files = st.file_uploader("Tải lên nhiều bản vẽ (.dxf)", type=['dxf'], accept_multiple_files=True)
         
         if uploaded_files:
-            file_configs = []
-            st.markdown("#### Cấu hình cho từng Bản vẽ")
-            for idx, file in enumerate(uploaded_files):
-                with st.expander(f"Bản vẽ {idx+1}: {file.name}", expanded=True):
-                    f_col1, f_col2, f_col3 = st.columns([1, 1, 2])
-                    with f_col1:
-                        material = st.selectbox("Nhóm Vật Liệu", ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], index=2, key=f"mat_{file.name}_{idx}")
-                    with f_col2:
-                        quantity = st.number_input("Số lượng (tấm)", min_value=1, value=1, key=f"qty_{file.name}_{idx}")
-                    with f_col3:
-                        process_type = st.selectbox("Quy trình Gia công", process_options, key=f"proc_{file.name}_{idx}")
-                    
-                    file_configs.append({
-                        "file": file,
-                        "material": material,
-                        "quantity": quantity,
-                        "process_type": process_type
-                    })
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            btn_analyze = st.button("Phân tích & Thêm tất cả vào hàng đợi", use_container_width=True, type="primary")
+            if 'analyzed_files' not in st.session_state:
+                st.session_state.analyzed_files = {}
 
-            if btn_analyze:
-                st.markdown("#### Kết quả phân tích")
+            # Nút phân tích
+            if st.button("Phân tích bản vẽ", type="primary"):
                 os.makedirs("data", exist_ok=True)
-                
-                st.session_state.job_counter += 1
-                master_job_idx = st.session_state.job_counter
-                total_added = 0
-                
-                for idx_in_batch, config in enumerate(file_configs):
-                    file = config["file"]
-                    
-                    # 1. Lưu file tạm
-                    temp_path = os.path.join("data", file.name)
-                    with open(temp_path, "wb") as f:
-                        f.write(file.getbuffer())
-                    
-                    # 2. Phân tích DXF
-                    with st.spinner(f"Đang xử lý {file.name}..."):
-                        # Xử lý từng file riêng biệt
+                with st.spinner("Đang phân tích ..."):
+                    for file in uploaded_files:
+                        temp_path = os.path.join("data", file.name)
+                        with open(temp_path, "wb") as f:
+                            f.write(file.getbuffer())
+                        # Phân tích DXF
                         dxf_info = extract_cutting_info([temp_path])
+                        st.session_state.analyzed_files[file.name] = dxf_info
+                st.success("Done")
+
+            if any(f.name in st.session_state.analyzed_files for f in uploaded_files):
+                file_configs = []
+                st.markdown("#### Cấu hình cho từng Bản vẽ")
+                for idx, file in enumerate(uploaded_files):
+                    dxf_info = st.session_state.analyzed_files.get(file.name)
+                    if not dxf_info:
+                        continue 
                         
-                    if dxf_info['status'] == 'success':
-                        # Hiển thị kết quả riêng cho file này
-                        st.success(f"**{file.name}**: Dài {dxf_info['total_len_mm']}mm, Phức tạp {dxf_info['complexity_ratio']}")
+                    with st.expander(f"Bản vẽ {idx+1}: {file.name}", expanded=True):
+                        if dxf_info['status'] == 'success':
+                            # Hiển thị thông tin
+                            st.success(f"Dài thẳng: {dxf_info.get('straight_len_mm', 0)}mm | Cong/Tròn: {dxf_info.get('curved_len_mm', 0)}mm | Tổng: {dxf_info.get('total_len_mm', 0)}mm")
+                            texts = dxf_info.get("texts", [])
+                            if texts:
+                                st.info(f"Ghi chú trong bản vẽ: {', '.join(texts[:10])}" + ("..." if len(texts)>10 else ""))
+                            if dxf_info.get("warnings"):
+                                st.warning(f"Cảnh báo: " + "; ".join(dxf_info["warnings"]))
+                                
+                            # Lọc quy trình
+                            has_curve = dxf_info.get('curved_len_mm', 0) > 0
+                            
+                            valid_processes = []
+                            for p_name, caps in process_map.items():
+                                is_straight_only = ('Cut_straight' in caps) and ('Cut_contour' not in caps)
+                                if has_curve and is_straight_only:
+                                    continue 
+                                valid_processes.append(p_name)
+                                
+                            if not valid_processes:
+                                st.error("Không có quy trình nào phù hợp với bản vẽ chứa đường cong này!")
+                                valid_processes = process_options 
+                                
+                            f_col1, f_col2, f_col3 = st.columns([1, 1, 2])
+                            with f_col1:
+                                material = st.selectbox("Nhóm Vật Liệu", ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"], index=2, key=f"mat_{file.name}_{idx}")
+                            with f_col2:
+                                quantity = st.number_input("Số lượng (tấm)", min_value=1, value=1, key=f"qty_{file.name}_{idx}")
+                            with f_col3:
+                                process_type = st.selectbox("Quy trình Gia công phù hợp", valid_processes, key=f"proc_{file.name}_{idx}")
+                            
+                            file_configs.append({
+                                "file": file,
+                                "material": material,
+                                "quantity": quantity,
+                                "process_type": process_type,
+                                "dxf_info": dxf_info
+                            })
+                        else:
+                            st.error(f"Lỗi khi đọc bản vẽ: {dxf_info['message']}")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                btn_add = st.button("Thêm tất cả vào hàng đợi", use_container_width=True, type="primary")
+
+                if btn_add and file_configs:
+                    st.session_state.job_counter += 1
+                    master_job_idx = st.session_state.job_counter
+                    total_added = 0
+                    
+                    for idx_in_batch, config in enumerate(file_configs):
+                        file = config["file"]
+                        dxf_info = config["dxf_info"]
                         
-                        # 3. Dự đoán AI và chuẩn bị Job Data
-                        # Tạo Job ID duy nhất dù có trùng tên ban đầu (gom nhóm theo master_job_idx)
                         ts = int(time.time() * 1000) % 10000 
                         short_name = file.name[:6].replace(" ", "_")
                         
@@ -196,21 +222,16 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                             "size_mm": job_data['size_mm'],
                             "dxf_complexity": job_data['complexity']
                         })
-                        job_data['process'] = str(process_type)
+                        job_data['process'] = str(config["process_type"])
                         job_data['process_machine'] = str(job_data['operations'])
-                        # Thêm vào hàng đợi
                         st.session_state.jobs_queue.append(job_data)
                         total_added += 1
                         
-                        if dxf_info.get("warnings"):
-                            st.warning(f"Cảnh báo ({file.name}): " + "; ".join(dxf_info["warnings"]))
-                            
-                    else:
-                        st.error(f"Lỗi khi đọc {file.name}: {dxf_info['message']}")
-                
-                if total_added > 0:
-                    st.toast(f"Đã thêm thành công {total_added} bản vẽ vào hàng đợi.")
-                    # Automatically update task.md internally
+                    if total_added > 0:
+                        st.toast(f"Đã thêm thành công {total_added} bản vẽ vào hàng đợi.")
+                        st.session_state.analyzed_files = {}
+                        time.sleep(1)
+                        st.rerun()
 
 # ==========================================
 # TAB 2: DASHBOARD
