@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
-from database.models import get_engine, Material, Machine, MachineCapability, MachineSpeed, ProcessDefinition
+from database.models import get_engine, Material, Machine, MachineCapability, MachineSpeed, ProcessDefinition, Project
 
 # Helper function to load and save data for a specific model
 def render_table_editor(session, model_class, table_name, pk_col='id'):
@@ -79,7 +79,8 @@ def render_master_data_management():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "Dự án (Projects)",
         "Vật liệu (Materials)", 
         "Máy móc (Machines)", 
         "Khả năng Máy (Capabilities)", 
@@ -88,14 +89,16 @@ def render_master_data_management():
     ])
 
     with tab1:
-        render_table_editor(session, Material, "Vật Liệu", pk_col="id") 
+        render_table_editor(session, Project, "Dự Án", pk_col="id") 
     with tab2:
-        render_table_editor(session, Machine, "Máy Móc", pk_col="id")
+        render_table_editor(session, Material, "Vật Liệu", pk_col="id") 
     with tab3:
-        render_table_editor(session, MachineCapability, "Khả Năng Cắt", pk_col="id")
+        render_table_editor(session, Machine, "Máy Móc", pk_col="id")
     with tab4:
-        render_table_editor(session, MachineSpeed, "Tốc Độ Cắt", pk_col="id")
+        render_table_editor(session, MachineCapability, "Khả Năng Cắt", pk_col="id")
     with tab5:
+        render_table_editor(session, MachineSpeed, "Tốc Độ Cắt", pk_col="id")
+    with tab6:
         render_table_editor(session, ProcessDefinition, "Quy Trình Sản Xuất", pk_col="id")
 
     session.close()

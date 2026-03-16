@@ -73,11 +73,17 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         all_steps = session.query(ProcessDefinition).all()
         for step in all_steps:
             process_map[step.process_name].append(step.capability_required)
+
+        # LOAD PROJECTS
+        from database.models import Project
+        all_projects = session.query(Project).all()
+        project_options = [{"id": p.id, "name": p.project_name, "code": p.project_code, "hexcode": p.hexcode} for p in all_projects]
             
         session.close()
     except Exception as e:
         print(f"Error loading DB: {e}")
         process_map = {}
+        project_options = []
         
     if not process_map:
         process_map = {
@@ -90,15 +96,56 @@ if tab_selection == "1. Nhập liệu đơn hàng":
 
     with st.container(border=True):
         st.markdown("#### Thiết lập chung cho Đơn hàng")
-        c1, c2, c3, c4 = st.columns(4)
+        
+        if 'project_options' not in locals() or not project_options:
+            project_options_display = ["Chưa có dự án nào"]
+        else:
+            project_options_display = [f"[{p['code']}] {p['name']} (Hex: {p['hexcode'] or 'N/A'})" for p in project_options]
+
+        c1, c2 = st.columns([3, 1])
         with c1:
-            project_name_input = st.text_input("Tên Công trình")
+            selected_project_str = st.selectbox("Chọn Dự án / Công trình hiện có:", project_options_display)
+            
+            selected_project_data = None
+            if selected_project_str != "Chưa có dự án nào" and project_options:
+                idx = project_options_display.index(selected_project_str)
+                selected_project_data = project_options[idx]
         with c2:
-            project_code_input = st.text_input("Mã Công trình")
-        with c3:
-            hexcode_input = st.text_input("Mã Hexcode (Mã phụ của Dự án)")
-        with c4:
             priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
+
+        with st.expander("➕ Hoặc Tạo mới Dự án nhanh tại đây", expanded=False):
+            with st.form("new_project_form"):
+                new_c1, new_c2, new_c3 = st.columns(3)
+                with new_c1:
+                    new_p_name = st.text_input("Tên Công trình *")
+                with new_c2:
+                    new_p_code = st.text_input("Mã Công trình *")
+                with new_c3:
+                    new_p_hex = st.text_input("Hexcode")
+                    
+                submitted = st.form_submit_button("Lưu & Thêm Dự án mới", type="primary")
+                if submitted:
+                    if not new_p_name or not new_p_code:
+                        st.error("❌ Tên và Mã công trình là bắt buộc!")
+                    else:
+                        try:
+                            from database.models import get_engine, Project
+                            from sqlalchemy.orm import sessionmaker
+                            eng = get_engine('sqlite:///master_data_v2.db')
+                            Sess = sessionmaker(bind=eng)
+                            sess = Sess()
+                            
+                            exist_p = sess.query(Project).filter_by(project_code=new_p_code).first()
+                            if exist_p:
+                                st.error(f"❌ Mã công trình '{new_p_code}' đã tồn tại! Vui lòng chọn mã khác.")
+                            else:
+                                new_proj = Project(project_name=new_p_name, project_code=new_p_code, hexcode=new_p_hex)
+                                sess.add(new_proj)
+                                sess.commit()
+                                st.success(f"✅ Đã tạo dự án '{new_p_name}' thành công! Vui lòng bấm F5 (Làm mới trang) để cập nhật danh sách.")
+                            sess.close()
+                        except Exception as e:
+                            st.error(f"❌ Lỗi thêm Dự án: {e}")
 
         c5, c6 = st.columns(2)
         with c5:
@@ -119,7 +166,6 @@ if tab_selection == "1. Nhập liệu đơn hàng":
             if 'analyzed_files' not in st.session_state:
                 st.session_state.analyzed_files = {}
 
-            # Nút phân tích
             if st.button("Phân tích bản vẽ", type="primary"):
                 os.makedirs("data", exist_ok=True)
                 with st.spinner("Đang phân tích ..."):
@@ -186,6 +232,10 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                 btn_add = st.button("Thêm tất cả vào hàng đợi", use_container_width=True, type="primary")
 
                 if btn_add and file_configs:
+                    if not selected_project_data:
+                        st.error("⚠️ Vui lòng Tạo mới hoặc Chọn một Dự án/Công trình trước khi thêm vào hàng đợi!")
+                        st.stop()
+                        
                     st.session_state.job_counter += 1
                     master_job_idx = st.session_state.job_counter
                     total_added = 0
@@ -197,14 +247,18 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                         ts = int(time.time() * 1000) % 10000 
                         short_name = file.name[:6].replace(" ", "_")
                         
-                        prefix = project_code_input.strip() if project_code_input.strip() else f"JOB-{master_job_idx:03d}"
+                        project_code_val = selected_project_data['code']
+                        project_name_val = selected_project_data['name']
+                        hexcode_val = selected_project_data['hexcode']
+                        
+                        prefix = project_code_val.strip() if project_code_val.strip() else f"JOB-{master_job_idx:03d}"
                         job_id = f"{prefix}.{idx_in_batch+1}_{short_name}_{ts}"
                         
                         job_data = {
                             "id": job_id,
-                            "project_name": project_name_input,
-                            "project_code": project_code_input,
-                            "hexcode": hexcode_input,
+                            "project_name": project_name_val,
+                            "project_code": project_code_val,
+                            "hexcode": hexcode_val,
                             "material_group": config["material"],
                             "process_steps": len(process_map[config["process_type"]]),
                             "size_mm": dxf_info['total_len_mm'], 
@@ -246,8 +300,28 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
             
             # Map process_machine id to visual names
             if 'operations' in df_queue.columns:
-                def map_ops_to_machines(ops_list):
+                try:
+                    from database.models import get_engine, MachineCapability
+                    from sqlalchemy.orm import sessionmaker
+                    engine_map = get_engine('sqlite:///master_data_v2.db')
+                    Session_map = sessionmaker(bind=engine_map)
+                    session_map = Session_map()
+                    
+                    caps_db = session_map.query(MachineCapability).all()
+                    dynamic_mapping = {}
+                    for cap in caps_db:
+                        if cap.capability_name not in dynamic_mapping:
+                            dynamic_mapping[cap.capability_name] = []
+                        if cap.machine_id not in dynamic_mapping[cap.capability_name]:
+                            dynamic_mapping[cap.capability_name].append(cap.machine_id)
+                            
+                    mapping = {k: " / ".join(v) for k, v in dynamic_mapping.items()}
+                    session_map.close()
+                except Exception as e:
+                    print(f"Lỗi lấy dữ liệu máy: {e}")
                     mapping = {"Cut_straight": "Máy Cắt Cầu", "Cut_contour": "Máy Cắt Nước", "Polish_edge": "Máy Đánh Bóng", "Drill_hole": "Máy Khoan"}
+
+                def map_ops_to_machines(ops_list):
                     if not isinstance(ops_list, list):
                         try:
                             import ast
