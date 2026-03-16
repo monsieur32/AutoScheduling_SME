@@ -63,7 +63,8 @@ class GAVNSSolver:
                 # Filter eligible machines per operation
                 eligible_machines = []
                 for m_id, m_data in self.machines_data.items():
-                    if op_req_cap in m_data.get('capabilities', []):
+                    is_on = m_data.get('status', 'On').lower() == 'on' 
+                    if is_on and op_req_cap in m_data.get('capabilities', []):
                         eligible_machines.append(m_id)
                         
                 if not eligible_machines:

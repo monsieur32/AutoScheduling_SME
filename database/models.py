@@ -55,6 +55,14 @@ class ProcessDefinition(Base):
     capability_required = Column(String, nullable=False) # op_type
     notes = Column(String, nullable=True)
 
+class Project(Base):
+    __tablename__ = 'projects'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_name = Column(String, nullable=False)
+    project_code = Column(String, nullable=False, unique=True)
+    hexcode = Column(String, nullable=True)
+    notes = Column(String, nullable=True)
+
 # Helper function để lấy engine
 def get_engine(db_path='sqlite:///master_data_v2.db'):
     return create_engine(db_path)
