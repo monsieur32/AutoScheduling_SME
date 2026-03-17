@@ -334,12 +334,40 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
                     
                 df_queue['process_machine'] = df_queue['operations'].apply(map_ops_to_machines)
 
-            # Hiển thị dataframe sạch sẽ
-            st.dataframe(
+            # Hiển thị dataframe và cho phép chỉnh sửa/xóa dữ liệu
+            edited_df_queue = st.data_editor(
                 df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'complexity', 'process','process_machine']],
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
+                num_rows="dynamic",
+                key="queue_editor"
             )
+            
+            queue_changed = False
+            if len(edited_df_queue) != len(df_queue):
+                queue_changed = True
+            else:
+                if not edited_df_queue.equals(df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'complexity', 'process','process_machine']]):
+                    queue_changed = True
+
+            if queue_changed:
+                new_queue = []
+                for _, row in edited_df_queue.iterrows():
+                    old_job = next((j for j in st.session_state.jobs_queue if j['id'] == row['id']), None)
+                    if old_job:
+                        old_job.update({
+                            'project_name': row.get('project_name', old_job.get('project_name')),
+                            'project_code': row.get('project_code', old_job.get('project_code')),
+                            'hexcode': row.get('hexcode', old_job.get('hexcode')),
+                            'material_group': row.get('material_group', old_job.get('material_group')),
+                            'size_mm': row.get('size_mm', old_job.get('size_mm')),
+                            'complexity': row.get('complexity', old_job.get('complexity')),
+                            'process': row.get('process', old_job.get('process')),
+                            'process_machine': row.get('process_machine', old_job.get('process_machine'))
+                        })
+                        new_queue.append(old_job)
+                st.session_state.jobs_queue = new_queue
+                st.rerun()
             
             c_opt1, c_opt2 = st.columns([1, 4])
             with c_opt1:
@@ -369,7 +397,16 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
                 cols = st.columns(len(options))
                 for idx, (col, opt) in enumerate(zip(cols, options)):
                     with col:
-                        st.markdown(f"**{opt['name']}**")
+                        # Thay vì in đậm toàn bộ dòng chữ dài, có thể cắt phần mô tả xuống làm chú thích
+                        opt_name = opt['name']
+                        if "(" in opt_name and ")" in opt_name:
+                            main_name = opt_name.split("(")[0].strip()
+                            desc = opt_name.split("(")[1].replace(")", "").strip()
+                            st.markdown(f"**{main_name}**")
+                            st.caption(f"*{desc}*")
+                        else:
+                            st.markdown(f"**{opt['name']}**")
+                            
                         metrics = opt['metrics']
                         st.metric("Tổng Thời Gian (Makespan)", f"{metrics['makespan']} phút")
                         st.metric("Thời gian Setup", f"{metrics['setup']} phút")
@@ -439,7 +476,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
         fig.update_layout(
             xaxis_title="Thời gian",
             yaxis_title="Máy",
-            legend_title="Loại Lập lịch",
+            legend_title="Trạng thái Máy",
             height=400 + (len(df_schedule['machine'].unique())   * 20),
             margin=dict(l=0, r=0, t=30, b=0)
 
@@ -480,8 +517,50 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
             if curr_drop:
                 df_detailed = df_detailed.drop(columns=curr_drop)
 
-            st.dataframe(df_detailed, use_container_width=True)
-            csv = df_detailed.to_csv(index=False).encode('utf-8')
+            edited_df_detailed = st.data_editor(
+                df_detailed, 
+                use_container_width=True,
+                hide_index=True,
+                num_rows="dynamic",
+                key="schedule_detailed_editor"
+            )
+            
+            detailed_changed = False
+            if len(edited_df_detailed) != len(df_detailed):
+                detailed_changed = True
+            elif not edited_df_detailed.equals(df_detailed):
+                detailed_changed = True
+                
+            if detailed_changed:
+                new_scheduled = []
+                for idx, row in edited_df_detailed.iterrows():
+                    # idx in edited_df_detailed corresponds to the index in df_detailed, 
+                    # which corresponds identically to st.session_state.scheduled_jobs because of how pd.merge(how='left') behaves.
+                    if isinstance(idx, int) and idx < len(st.session_state.scheduled_jobs):
+                        old_sched = st.session_state.scheduled_jobs[idx]
+                        
+                        try:
+                            # Update start/finish minutes if Start_Time / Finish_Time was changed
+                            base_time = datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
+                            if 'Start_Time' in row and pd.notnull(row['Start_Time']):
+                                s_time = pd.to_datetime(row['Start_Time'])
+                                old_sched['start'] = int((s_time - base_time).total_seconds() / 60)
+                            if 'Finish_Time' in row and pd.notnull(row['Finish_Time']):
+                                f_time = pd.to_datetime(row['Finish_Time'])
+                                old_sched['finish'] = int((f_time - base_time).total_seconds() / 60)
+                            if 'setup' in row:
+                                old_sched['setup'] = row['setup']
+                            if 'machine' in row:
+                                old_sched['machine'] = row['machine']
+                        except Exception:
+                            pass
+                        
+                        new_scheduled.append(old_sched)
+                
+                st.session_state.scheduled_jobs = new_scheduled
+                st.rerun()
+
+            csv = edited_df_detailed.to_csv(index=False).encode('utf-8')
             st.download_button("Tải xuống CSV", csv, "schedule.csv", "text/csv")
             
     else:

@@ -472,40 +472,32 @@ class GAVNSSolver:
                     
             pop = new_pop
             
-        # Collect distinct options
+        # Collect exactly 3 options for the UI
         options = []
-        seen_schedules = set()
         
-        def add_option(name, ind_tuple):
-            if not ind_tuple: return
+        def format_option(name, ind_tuple):
             fit, ind, mk, tst, tardy, sched = ind_tuple
+            return {
+                "name": name,
+                "schedule": sched,
+                "metrics": {
+                    "fitness": round(fit, 2),
+                    "makespan": mk,
+                    "setup": tst,
+                    "tardiness": tardy
+                }
+            }
             
-            # Create a simple hash/string of the schedule to verify uniqueness
-            sched_hash = "".join([f"{s['job_id']}_{s['machine']}_{s['start']}" for s in sched])
-            if sched_hash not in seen_schedules:
-                seen_schedules.add(sched_hash)
-                options.append({
-                    "name": name,
-                    "schedule": sched,
-                    "metrics": {
-                        "fitness": round(fit, 2),
-                        "makespan": mk,
-                        "setup": tst,
-                        "tardiness": tardy
-                    }
-                })
-
-        # Add the options in order of preference
-        add_option("Phương án Cân bằng (Balanced)", best_balanced_ind)
-        add_option("Phương án Nhanh nhất (Speed/Makespan)", best_makespan_ind)
-        add_option("Phương án Tối ưu Gá đặt (Cost/Setup)", best_setup_ind)
+        # We need 3 options. However, best_balanced_ind, best_makespan_ind, and best_setup_ind might be the same.
+        # We will populate them in order explicitly.
         
-        # Fill up to 3 options if we didn't find enough unique ones
-        idx = 0
-        while len(options) < 3 and idx < len(scored_pop):
-            # scored_pop is sorted by fitness
-            add_option(f"Phương án Phụ (Thay thế {len(options)+1})", scored_pop[idx])
-            idx += 1
+        name1 = "Phương án 1 (Ưu tiên Tiến độ chung toàn xưởng)"
+        name2 = "Phương án 2 (Xong sớm nhất cho đơn này - Có thể tốn công di chuyển)"
+        name3 = "Phương án 3 (Hạn chế di chuyển/Setup - Có thể chậm tiến độ)"
+        
+        options.append(format_option(name1, best_balanced_ind))
+        options.append(format_option(name2, best_makespan_ind))
+        options.append(format_option(name3, best_setup_ind))
             
         print(f"GA-VNS Completed. Generated {len(options)} options.")
         for i, opt in enumerate(options):
