@@ -113,7 +113,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
         with c2:
             priority_input = st.selectbox("Mức độ ưu tiên", ["Bình thường", "Cao", "Gấp"], index=0)
 
-        with st.expander("➕ Hoặc Tạo mới Dự án nhanh tại đây", expanded=False):
+        with st.expander("Tạo mới Dự án nhanh tại đây", expanded=False):
             with st.form("new_project_form"):
                 new_c1, new_c2, new_c3 = st.columns(3)
                 with new_c1:
