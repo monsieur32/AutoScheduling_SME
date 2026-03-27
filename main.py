@@ -126,7 +126,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                 submitted = st.form_submit_button("Lưu & Thêm Dự án mới", type="primary")
                 if submitted:
                     if not new_p_name or not new_p_code:
-                        st.error("❌ Tên và Mã công trình là bắt buộc!")
+                        st.error("Tên và Mã công trình là bắt buộc!")
                     else:
                         try:
                             from database.models import get_engine, Project
@@ -137,15 +137,15 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                             
                             exist_p = sess.query(Project).filter_by(project_code=new_p_code).first()
                             if exist_p:
-                                st.error(f"❌ Mã công trình '{new_p_code}' đã tồn tại! Vui lòng chọn mã khác.")
+                                st.error(f"Mã công trình '{new_p_code}' đã tồn tại! Vui lòng chọn mã khác.")
                             else:
                                 new_proj = Project(project_name=new_p_name, project_code=new_p_code, hexcode=new_p_hex)
                                 sess.add(new_proj)
                                 sess.commit()
-                                st.success(f"✅ Đã tạo dự án '{new_p_name}' thành công! Vui lòng bấm F5 (Làm mới trang) để cập nhật danh sách.")
+                                st.success(f"Đã tạo dự án '{new_p_name}' thành công")
                             sess.close()
                         except Exception as e:
-                            st.error(f"❌ Lỗi thêm Dự án: {e}")
+                            st.error(f"Lỗi thêm Dự án: {e}")
 
         c5, c6 = st.columns(2)
         with c5:
@@ -218,12 +218,25 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                             with f_col3:
                                 process_type = st.selectbox("Quy trình Gia công phù hợp", valid_processes, key=f"proc_{file.name}_{idx}")
                             
+                            process_lower = process_type.lower()
+                            detail_len_mm = dxf_info['total_len_mm']
+                            if any(k in process_lower for k in ["vát", "rãnh", "biên dạng", "chỉ", "hoa văn"]):
+                                detail_len_mm = st.number_input(
+                                    "Chiều dài chi tiết cần gia công (mm) - Dành cho Vát/Rãnh/Biên dạng",
+                                    min_value=0.0,
+                                    value=float(dxf_info['total_len_mm']),
+                                    step=50.0,
+                                    key=f"detail_{file.name}_{idx}",
+                                    help="Hệ thống sẽ dùng chiều dài này để tính toán thời gian thay vì dùng toàn bộ chiều dài phôi."
+                                )
+                                
                             file_configs.append({
                                 "file": file,
                                 "material": material,
                                 "quantity": quantity,
                                 "process_type": process_type,
-                                "dxf_info": dxf_info
+                                "dxf_info": dxf_info,
+                                "detail_len_mm": detail_len_mm
                             })
                         else:
                             st.error(f"Lỗi khi đọc bản vẽ: {dxf_info['message']}")
@@ -233,7 +246,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
 
                 if btn_add and file_configs:
                     if not selected_project_data:
-                        st.error("⚠️ Vui lòng Tạo mới hoặc Chọn một Dự án/Công trình trước khi thêm vào hàng đợi!")
+                        st.error("Vui lòng Tạo mới hoặc Chọn một Dự án trước khi thêm vào hàng đợi!")
                         st.stop()
                         
                     st.session_state.job_counter += 1
@@ -262,6 +275,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                             "material_group": config["material"],
                             "process_steps": len(process_map[config["process_type"]]),
                             "size_mm": dxf_info['total_len_mm'], 
+                            "detail_len_mm": config.get("detail_len_mm", dxf_info['total_len_mm']),
                             "complexity": dxf_info['complexity_ratio'],
                             "quantity": config["quantity"],
                             "operations": process_map[config["process_type"]],
@@ -336,7 +350,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
 
             # Hiển thị dataframe và cho phép chỉnh sửa/xóa dữ liệu
             edited_df_queue = st.data_editor(
-                df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'complexity', 'process','process_machine']],
+                df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'detail_len_mm', 'complexity', 'process','process_machine']],
                 use_container_width=True,
                 hide_index=True,
                 num_rows="dynamic",
@@ -347,7 +361,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
             if len(edited_df_queue) != len(df_queue):
                 queue_changed = True
             else:
-                if not edited_df_queue.equals(df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'complexity', 'process','process_machine']]):
+                if not edited_df_queue.equals(df_queue[['id', 'project_name', 'project_code', 'hexcode', 'material_group', 'size_mm', 'detail_len_mm', 'complexity', 'process','process_machine']]):
                     queue_changed = True
 
             if queue_changed:
@@ -361,6 +375,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
                             'hexcode': row.get('hexcode', old_job.get('hexcode')),
                             'material_group': row.get('material_group', old_job.get('material_group')),
                             'size_mm': row.get('size_mm', old_job.get('size_mm')),
+                            'detail_len_mm': row.get('detail_len_mm', old_job.get('detail_len_mm')),
                             'complexity': row.get('complexity', old_job.get('complexity')),
                             'process': row.get('process', old_job.get('process')),
                             'process_machine': row.get('process_machine', old_job.get('process_machine'))
@@ -477,7 +492,7 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
             xaxis_title="Thời gian",
             yaxis_title="Máy",
             legend_title="Trạng thái Máy",
-            height=400 + (len(df_schedule['machine'].unique())   * 20),
+            height=400 + (len(df_schedule['machine'].unique())   * 20), 
             margin=dict(l=0, r=0, t=30, b=0)
 
         )

@@ -76,7 +76,10 @@ class GAVNSSolver:
                     if m_id == "MANUAL_FALLBACK":
                         dur = 120
                     else:
-                        dur = self.calculate_duration(m_id, job.get('material_group', 'C'), job.get('size_mm', 1000))
+                        effective_len = job.get('size_mm', 1000)
+                        if op_req_cap in ['Chamfer_45', 'Edge_simple', 'Edge_complex'] and 'detail_len_mm' in job:
+                            effective_len = job['detail_len_mm']
+                        dur = self.calculate_duration(m_id, job.get('material_group', 'C'), effective_len)
                     
                     if job.get('slow_mode'):
                         dur = int(dur * 1.5)
