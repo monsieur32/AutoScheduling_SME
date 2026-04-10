@@ -1,0 +1,14 @@
+# Backend API dependencies
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+pydantic>=2.5.0
+SQLAlchemy>=2.0.0
+
+# Core algorithm dependencies (same as original)
+pandas>=2.2.0
+ezdxf>=1.1.0
+scikit-learn>=1.3.0
+joblib>=1.3.0
+numpy>=1.24.0
+openpyxl>=3.1.0

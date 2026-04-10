@@ -220,7 +220,7 @@ if tab_selection == "1. Nhập liệu đơn hàng":
                             
                             process_lower = process_type.lower()
                             detail_len_mm = dxf_info['total_len_mm']
-                            if any(k in process_lower for k in ["vát", "rãnh", "biên dạng", "chỉ", "hoa văn"]):
+                            if any(k in process_lower for k in ["vát", "rãnh", "biên dạng", "chỉ", "hoa văn", "tất cả"]):
                                 detail_len_mm = st.number_input(
                                     "Chiều dài chi tiết cần gia công (mm) - Dành cho Vát/Rãnh/Biên dạng",
                                     min_value=0.0,
