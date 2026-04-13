@@ -1,0 +1,1913 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "project_name": "VIN",
+      "project_code": "VIN2408",
+      "hexcode": "V-0302",
+      "notes": null
+    },
+    {
+      "id": 2,
+      "project_name": "VIN2",
+      "project_code": "VIN24082004",
+      "hexcode": "V-1234",
+      "notes": null
+    }
+  ],
+  "machines": [
+    {
+      "id": "CNCTNC0001",
+      "name": "WJ-01 (HEAD3020BA)",
+      "machine_type": "Waterjet",
+      "status": "On",
+      "max_size_mm": "3000x2000",
+      "notes": null
+    },
+    {
+      "id": "CNCTNC0002",
+      "name": "WJ-02 (HEAD3020BA-F)",
+      "machine_type": "Waterjet",
+      "status": "On",
+      "max_size_mm": "3000x2000",
+      "notes": null
+    },
+    {
+      "id": "CNCTNC0003",
+      "name": "WJ-03 (HEAD3020BA-F)",
+      "machine_type": "Waterjet",
+      "status": "Maintenance",
+      "max_size_mm": "3000x2000",
+      "notes": null
+    },
+    {
+      "id": "CNCTNC0004",
+      "name": "WJ-04 (HEAD3020BA-F)",
+      "machine_type": "Waterjet",
+      "status": "On",
+      "max_size_mm": "3000x2000",
+      "notes": null
+    },
+    {
+      "id": "CNCTNC0007",
+      "name": "WJ 5 trục",
+      "machine_type": "Waterjet_5axis",
+      "status": "On",
+      "max_size_mm": "3000x2000",
+      "notes": null
+    },
+    {
+      "id": "CNCCCC0001",
+      "name": "Cắt cầu 1",
+      "machine_type": "BridgeSaw",
+      "status": "On",
+      "max_size_mm": "3600x2400",
+      "notes": null
+    },
+    {
+      "id": "CNCCCC0002",
+      "name": "Cắt cầu 5 trục YQ5H-3624",
+      "machine_type": "BridgeSaw_5axis",
+      "status": "On",
+      "max_size_mm": "3600x2400",
+      "notes": null
+    },
+    {
+      "id": "CNCCCC0003",
+      "name": "Cắt cầu 5 trục YQ5H-3624-2",
+      "machine_type": "BridgeSaw_5axis",
+      "status": "On",
+      "max_size_mm": "3600x2400",
+      "notes": null
+    },
+    {
+      "id": "CNCTRT0001",
+      "name": "CMS-01",
+      "machine_type": "CNC_Router",
+      "status": "On",
+      "max_size_mm": "2500x1800",
+      "notes": null
+    },
+    {
+      "id": "CNCTRT0002",
+      "name": "MÁY CMS - 02 (TN-C/TN-S 8517)",
+      "machine_type": "CNC_Router",
+      "status": "On",
+      "max_size_mm": "2500x1800",
+      "notes": null
+    },
+    {
+      "id": "CATVTC0001",
+      "name": "Máy líp 45",
+      "machine_type": "Chamfer",
+      "status": "On",
+      "max_size_mm": null,
+      "notes": null
+    }
+  ],
+  "machine_capabilities": [
+    {
+      "id": 1,
+      "machine_id": "CNCTNC0001",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 2,
+      "machine_id": "CNCTNC0001",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 3,
+      "machine_id": "CNCTNC0002",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 4,
+      "machine_id": "CNCTNC0002",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 5,
+      "machine_id": "CNCTNC0003",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 6,
+      "machine_id": "CNCTNC0003",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 7,
+      "machine_id": "CNCTNC0004",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 8,
+      "machine_id": "CNCTNC0004",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 9,
+      "machine_id": "CNCTNC0005",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 10,
+      "machine_id": "CNCTNC0005",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 11,
+      "machine_id": "CNCTNC0007",
+      "capability_name": "Cut_straight",
+      "priority": 1,
+      "notes": "5 trục"
+    },
+    {
+      "id": 12,
+      "machine_id": "CNCTNC0007",
+      "capability_name": "Cut_contour",
+      "priority": 1,
+      "notes": null
+    },
+    {
+      "id": 13,
+      "machine_id": "CNCCCC0001",
+      "capability_name": "Cut_straight",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 14,
+      "machine_id": "CNCCCC0001",
+      "capability_name": "Chamfer_45",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 15,
+      "machine_id": "CNCCCC0002",
+      "capability_name": "Cut_straight",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 16,
+      "machine_id": "CNCCCC0002",
+      "capability_name": "Chamfer_45",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 17,
+      "machine_id": "CNCCCC0002",
+      "capability_name": "Edge_simple",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 18,
+      "machine_id": "CNCCCC0003",
+      "capability_name": "Cut_straight",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 19,
+      "machine_id": "CNCCCC0003",
+      "capability_name": "Chamfer_45",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 20,
+      "machine_id": "CNCCCC0003",
+      "capability_name": "Edge_simple",
+      "priority": 2,
+      "notes": null
+    },
+    {
+      "id": 21,
+      "machine_id": "CNCTRT0001",
+      "capability_name": "Edge_simple",
+      "priority": 3,
+      "notes": null
+    },
+    {
+      "id": 22,
+      "machine_id": "CNCTRT0001",
+      "capability_name": "Edge_complex",
+      "priority": 3,
+      "notes": null
+    },
+    {
+      "id": 23,
+      "machine_id": "CNCTRT0002",
+      "capability_name": "Chamfer_45",
+      "priority": 3,
+      "notes": null
+    },
+    {
+      "id": 24,
+      "machine_id": "CNCTRT0002",
+      "capability_name": "Edge_simple",
+      "priority": 3,
+      "notes": null
+    },
+    {
+      "id": 25,
+      "machine_id": "CNCTRT0002",
+      "capability_name": "Edge_complex",
+      "priority": 3,
+      "notes": null
+    },
+    {
+      "id": 26,
+      "machine_id": "CATVTC0001",
+      "capability_name": "Chamfer_45",
+      "priority": 4,
+      "notes": null
+    }
+  ],
+  "machine_speeds": [
+    {
+      "id": 1,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "A",
+      "size_category": "LT_200",
+      "speed_value": 180.0
+    },
+    {
+      "id": 2,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "A",
+      "size_category": "B200_400",
+      "speed_value": 180.0
+    },
+    {
+      "id": 3,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "A",
+      "size_category": "B400_600",
+      "speed_value": 180.0
+    },
+    {
+      "id": 4,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "A",
+      "size_category": "GT_600",
+      "speed_value": 180.0
+    },
+    {
+      "id": 5,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "B",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 6,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "B",
+      "size_category": "B200_400",
+      "speed_value": 400.0
+    },
+    {
+      "id": 7,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "B",
+      "size_category": "B400_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 8,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "B",
+      "size_category": "GT_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 9,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "C",
+      "size_category": "LT_200",
+      "speed_value": 200.0
+    },
+    {
+      "id": 10,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "C",
+      "size_category": "B200_400",
+      "speed_value": 200.0
+    },
+    {
+      "id": 11,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "C",
+      "size_category": "B400_600",
+      "speed_value": 200.0
+    },
+    {
+      "id": 12,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "C",
+      "size_category": "GT_600",
+      "speed_value": 200.0
+    },
+    {
+      "id": 13,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "D",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 14,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "D",
+      "size_category": "B200_400",
+      "speed_value": 400.0
+    },
+    {
+      "id": 15,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "D",
+      "size_category": "B400_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 16,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "D",
+      "size_category": "GT_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 17,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "E",
+      "size_category": "LT_200",
+      "speed_value": 100.0
+    },
+    {
+      "id": 18,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "E",
+      "size_category": "B200_400",
+      "speed_value": 100.0
+    },
+    {
+      "id": 19,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "E",
+      "size_category": "B400_600",
+      "speed_value": 100.0
+    },
+    {
+      "id": 20,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "E",
+      "size_category": "GT_600",
+      "speed_value": 100.0
+    },
+    {
+      "id": 21,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "F",
+      "size_category": "LT_200",
+      "speed_value": 180.0
+    },
+    {
+      "id": 22,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "F",
+      "size_category": "B200_400",
+      "speed_value": 180.0
+    },
+    {
+      "id": 23,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "F",
+      "size_category": "B400_600",
+      "speed_value": 180.0
+    },
+    {
+      "id": 24,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "F",
+      "size_category": "GT_600",
+      "speed_value": 180.0
+    },
+    {
+      "id": 25,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "G",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 26,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "G",
+      "size_category": "B200_400",
+      "speed_value": 400.0
+    },
+    {
+      "id": 27,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "G",
+      "size_category": "B400_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 28,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "G",
+      "size_category": "GT_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 29,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "H",
+      "size_category": "LT_200",
+      "speed_value": 300.0
+    },
+    {
+      "id": 30,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "H",
+      "size_category": "B200_400",
+      "speed_value": 300.0
+    },
+    {
+      "id": 31,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "H",
+      "size_category": "B400_600",
+      "speed_value": 300.0
+    },
+    {
+      "id": 32,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "H",
+      "size_category": "GT_600",
+      "speed_value": 300.0
+    },
+    {
+      "id": 33,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "I",
+      "size_category": "LT_200",
+      "speed_value": 450.0
+    },
+    {
+      "id": 34,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "I",
+      "size_category": "B200_400",
+      "speed_value": 450.0
+    },
+    {
+      "id": 35,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "I",
+      "size_category": "B400_600",
+      "speed_value": 450.0
+    },
+    {
+      "id": 36,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "I",
+      "size_category": "GT_600",
+      "speed_value": 450.0
+    },
+    {
+      "id": 37,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "J",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 38,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "J",
+      "size_category": "B200_400",
+      "speed_value": 400.0
+    },
+    {
+      "id": 39,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "J",
+      "size_category": "B400_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 40,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "J",
+      "size_category": "GT_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 41,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "K",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 42,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "K",
+      "size_category": "B200_400",
+      "speed_value": 400.0
+    },
+    {
+      "id": 43,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "K",
+      "size_category": "B400_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 44,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "K",
+      "size_category": "GT_600",
+      "speed_value": 400.0
+    },
+    {
+      "id": 45,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "L",
+      "size_category": "LT_200",
+      "speed_value": 300.0
+    },
+    {
+      "id": 46,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "L",
+      "size_category": "B200_400",
+      "speed_value": 300.0
+    },
+    {
+      "id": 47,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "L",
+      "size_category": "B400_600",
+      "speed_value": 300.0
+    },
+    {
+      "id": 48,
+      "machine_id": "CNCTNC0001",
+      "material_group_code": "L",
+      "size_category": "GT_600",
+      "speed_value": 300.0
+    },
+    {
+      "id": 49,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "A",
+      "size_category": "LT_200",
+      "speed_value": 800.0
+    },
+    {
+      "id": 50,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "A",
+      "size_category": "B200_400",
+      "speed_value": 950.0
+    },
+    {
+      "id": 51,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "A",
+      "size_category": "B400_600",
+      "speed_value": 1100.0
+    },
+    {
+      "id": 52,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "A",
+      "size_category": "GT_600",
+      "speed_value": 1300.0
+    },
+    {
+      "id": 53,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "B",
+      "size_category": "LT_200",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 54,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "B",
+      "size_category": "B200_400",
+      "speed_value": 1350.0
+    },
+    {
+      "id": 55,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "B",
+      "size_category": "B400_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 56,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "B",
+      "size_category": "GT_600",
+      "speed_value": 1600.0
+    },
+    {
+      "id": 57,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "C",
+      "size_category": "LT_200",
+      "speed_value": 800.0
+    },
+    {
+      "id": 58,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "C",
+      "size_category": "B200_400",
+      "speed_value": 950.0
+    },
+    {
+      "id": 59,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "C",
+      "size_category": "B400_600",
+      "speed_value": 1100.0
+    },
+    {
+      "id": 60,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "C",
+      "size_category": "GT_600",
+      "speed_value": 1300.0
+    },
+    {
+      "id": 61,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "D",
+      "size_category": "LT_200",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 62,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "D",
+      "size_category": "B200_400",
+      "speed_value": 1350.0
+    },
+    {
+      "id": 63,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "D",
+      "size_category": "B400_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 64,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "D",
+      "size_category": "GT_600",
+      "speed_value": 1600.0
+    },
+    {
+      "id": 65,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "E",
+      "size_category": "LT_200",
+      "speed_value": 650.0
+    },
+    {
+      "id": 66,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "E",
+      "size_category": "B200_400",
+      "speed_value": 700.0
+    },
+    {
+      "id": 67,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "E",
+      "size_category": "B400_600",
+      "speed_value": 750.0
+    },
+    {
+      "id": 68,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "E",
+      "size_category": "GT_600",
+      "speed_value": 800.0
+    },
+    {
+      "id": 69,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "F",
+      "size_category": "LT_200",
+      "speed_value": 800.0
+    },
+    {
+      "id": 70,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "F",
+      "size_category": "B200_400",
+      "speed_value": 950.0
+    },
+    {
+      "id": 71,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "F",
+      "size_category": "B400_600",
+      "speed_value": 1100.0
+    },
+    {
+      "id": 72,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "F",
+      "size_category": "GT_600",
+      "speed_value": 1300.0
+    },
+    {
+      "id": 73,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "G",
+      "size_category": "LT_200",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 74,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "G",
+      "size_category": "B200_400",
+      "speed_value": 1350.0
+    },
+    {
+      "id": 75,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "G",
+      "size_category": "B400_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 76,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "G",
+      "size_category": "GT_600",
+      "speed_value": 1600.0
+    },
+    {
+      "id": 77,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "H",
+      "size_category": "LT_200",
+      "speed_value": 1000.0
+    },
+    {
+      "id": 78,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "H",
+      "size_category": "B200_400",
+      "speed_value": 1100.0
+    },
+    {
+      "id": 79,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "H",
+      "size_category": "B400_600",
+      "speed_value": 1300.0
+    },
+    {
+      "id": 80,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "H",
+      "size_category": "GT_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 81,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "I",
+      "size_category": "LT_200",
+      "speed_value": 1400.0
+    },
+    {
+      "id": 82,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "I",
+      "size_category": "B200_400",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 83,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "I",
+      "size_category": "B400_600",
+      "speed_value": 1700.0
+    },
+    {
+      "id": 84,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "I",
+      "size_category": "GT_600",
+      "speed_value": 1900.0
+    },
+    {
+      "id": 85,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "J",
+      "size_category": "LT_200",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 86,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "J",
+      "size_category": "B200_400",
+      "speed_value": 1350.0
+    },
+    {
+      "id": 87,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "J",
+      "size_category": "B400_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 88,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "J",
+      "size_category": "GT_600",
+      "speed_value": 1600.0
+    },
+    {
+      "id": 89,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "K",
+      "size_category": "LT_200",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 90,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "K",
+      "size_category": "B200_400",
+      "speed_value": 1350.0
+    },
+    {
+      "id": 91,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "K",
+      "size_category": "B400_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 92,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "K",
+      "size_category": "GT_600",
+      "speed_value": 1600.0
+    },
+    {
+      "id": 93,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "L",
+      "size_category": "LT_200",
+      "speed_value": 1000.0
+    },
+    {
+      "id": 94,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "L",
+      "size_category": "B200_400",
+      "speed_value": 1100.0
+    },
+    {
+      "id": 95,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "L",
+      "size_category": "B400_600",
+      "speed_value": 1300.0
+    },
+    {
+      "id": 96,
+      "machine_id": "CNCCCC0001",
+      "material_group_code": "L",
+      "size_category": "GT_600",
+      "speed_value": 1500.0
+    },
+    {
+      "id": 97,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "A",
+      "size_category": "LT_200",
+      "speed_value": 400.0
+    },
+    {
+      "id": 98,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "A",
+      "size_category": "B200_400",
+      "speed_value": 500.0
+    },
+    {
+      "id": 99,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "A",
+      "size_category": "B400_600",
+      "speed_value": 700.0
+    },
+    {
+      "id": 100,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "A",
+      "size_category": "GT_600",
+      "speed_value": 800.0
+    },
+    {
+      "id": 101,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "B",
+      "size_category": "LT_200",
+      "speed_value": 500.0
+    },
+    {
+      "id": 102,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "B",
+      "size_category": "B200_400",
+      "speed_value": 700.0
+    },
+    {
+      "id": 103,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "B",
+      "size_category": "B400_600",
+      "speed_value": 900.0
+    },
+    {
+      "id": 104,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "B",
+      "size_category": "GT_600",
+      "speed_value": 1200.0
+    },
+    {
+      "id": 105,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "I",
+      "size_category": "LT_200",
+      "speed_value": 600.0
+    },
+    {
+      "id": 106,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "I",
+      "size_category": "B200_400",
+      "speed_value": 800.0
+    },
+    {
+      "id": 107,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "I",
+      "size_category": "B400_600",
+      "speed_value": 1000.0
+    },
+    {
+      "id": 108,
+      "machine_id": "CNCTRT0001",
+      "material_group_code": "I",
+      "size_category": "GT_600",
+      "speed_value": 1300.0
+    }
+  ],
+  "process_definitions": [
+    {
+      "id": 1,
+      "process_id": "1",
+      "process_name": "Quy trình 1 (Phôi thô)",
+      "product_type": "Phôi thô",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 2,
+      "process_id": "2",
+      "process_name": "Quy trình 2 (Phôi cong hoặc bo góc)",
+      "product_type": "Phôi cong hoặc bo góc",
+      "step_order": 1,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 3,
+      "process_id": "2",
+      "process_name": "Quy trình 2 (Phôi cong hoặc bo góc)",
+      "product_type": "Phôi cong hoặc bo góc",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 4,
+      "process_id": "3",
+      "process_name": "Quy trình 3 (Tấm thẳng có vát cạnh)",
+      "product_type": "Tấm thẳng có vát cạnh",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 5,
+      "process_id": "3",
+      "process_name": "Quy trình 3 (Tấm thẳng có vát cạnh)",
+      "product_type": "Tấm thẳng có vát cạnh",
+      "step_order": 2,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 6,
+      "process_id": "4",
+      "process_name": "Quy trình 4 (Tấm thẳng có chạy chỉ/rãnh)",
+      "product_type": "Tấm thẳng có chạy chỉ/rãnh",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 7,
+      "process_id": "4",
+      "process_name": "Quy trình 4 (Tấm thẳng có chạy chỉ/rãnh)",
+      "product_type": "Tấm thẳng có chạy chỉ/rãnh",
+      "step_order": 2,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 8,
+      "process_id": "5",
+      "process_name": "Quy trình 5 (Tấm thẳng có hoa văn phức tạp)",
+      "product_type": "Tấm thẳng có hoa văn phức tạp",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 9,
+      "process_id": "5",
+      "process_name": "Quy trình 5 (Tấm thẳng có hoa văn phức tạp)",
+      "product_type": "Tấm thẳng có hoa văn phức tạp",
+      "step_order": 2,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 10,
+      "process_id": "6",
+      "process_name": "Quy trình 6 (Sản phẩm cong có vát 45)",
+      "product_type": "Sản phẩm cong có vát 45",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 11,
+      "process_id": "6",
+      "process_name": "Quy trình 6 (Sản phẩm cong có vát 45)",
+      "product_type": "Sản phẩm cong có vát 45",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 12,
+      "process_id": "6",
+      "process_name": "Quy trình 6 (Sản phẩm cong có vát 45)",
+      "product_type": "Sản phẩm cong có vát 45",
+      "step_order": 3,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 13,
+      "process_id": "7",
+      "process_name": "Quy trình 7 (Sản phẩm cong có chạy chỉ)",
+      "product_type": "Sản phẩm cong có chạy chỉ",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 14,
+      "process_id": "7",
+      "process_name": "Quy trình 7 (Sản phẩm cong có chạy chỉ)",
+      "product_type": "Sản phẩm cong có chạy chỉ",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 15,
+      "process_id": "7",
+      "process_name": "Quy trình 7 (Sản phẩm cong có chạy chỉ)",
+      "product_type": "Sản phẩm cong có chạy chỉ",
+      "step_order": 3,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 16,
+      "process_id": "8",
+      "process_name": "Quy trình 8 (Sản phẩm cong có hoa văn)",
+      "product_type": "Sản phẩm cong có hoa văn",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 17,
+      "process_id": "8",
+      "process_name": "Quy trình 8 (Sản phẩm cong có hoa văn)",
+      "product_type": "Sản phẩm cong có hoa văn",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 18,
+      "process_id": "8",
+      "process_name": "Quy trình 8 (Sản phẩm cong có hoa văn)",
+      "product_type": "Sản phẩm cong có hoa văn",
+      "step_order": 3,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 19,
+      "process_id": "9",
+      "process_name": "Quy trình 9 (Tấm thẳng vát + soi rãnh)",
+      "product_type": "Tấm thẳng vát + soi rãnh",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 20,
+      "process_id": "9",
+      "process_name": "Quy trình 9 (Tấm thẳng vát + soi rãnh)",
+      "product_type": "Tấm thẳng vát + soi rãnh",
+      "step_order": 2,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 21,
+      "process_id": "9",
+      "process_name": "Quy trình 9 (Tấm thẳng vát + soi rãnh)",
+      "product_type": "Tấm thẳng vát + soi rãnh",
+      "step_order": 3,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 22,
+      "process_id": "10",
+      "process_name": "Quy trình 10 (Tấm thẳng vát + hoa văn)",
+      "product_type": "Tấm thẳng vát + hoa văn",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 23,
+      "process_id": "10",
+      "process_name": "Quy trình 10 (Tấm thẳng vát + hoa văn)",
+      "product_type": "Tấm thẳng vát + hoa văn",
+      "step_order": 2,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 24,
+      "process_id": "10",
+      "process_name": "Quy trình 10 (Tấm thẳng vát + hoa văn)",
+      "product_type": "Tấm thẳng vát + hoa văn",
+      "step_order": 3,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 25,
+      "process_id": "11",
+      "process_name": "Quy trình 11 (Tấm thẳng đa lớp biên dạng)",
+      "product_type": "Tấm thẳng đa lớp biên dạng",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 26,
+      "process_id": "11",
+      "process_name": "Quy trình 11 (Tấm thẳng đa lớp biên dạng)",
+      "product_type": "Tấm thẳng đa lớp biên dạng",
+      "step_order": 2,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 27,
+      "process_id": "11",
+      "process_name": "Quy trình 11 (Tấm thẳng đa lớp biên dạng)",
+      "product_type": "Tấm thẳng đa lớp biên dạng",
+      "step_order": 3,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 28,
+      "process_id": "12",
+      "process_name": "Quy trình 12 (Phôi dị hình + vát + rãnh)",
+      "product_type": "Phôi dị hình + vát + rãnh",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 29,
+      "process_id": "12",
+      "process_name": "Quy trình 12 (Phôi dị hình + vát + rãnh)",
+      "product_type": "Phôi dị hình + vát + rãnh",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 30,
+      "process_id": "12",
+      "process_name": "Quy trình 12 (Phôi dị hình + vát + rãnh)",
+      "product_type": "Phôi dị hình + vát + rãnh",
+      "step_order": 3,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 31,
+      "process_id": "12",
+      "process_name": "Quy trình 12 (Phôi dị hình + vát + rãnh)",
+      "product_type": "Phôi dị hình + vát + rãnh",
+      "step_order": 4,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 32,
+      "process_id": "13",
+      "process_name": "Quy trình 13 (Phôi dị hình + vát + hoa văn)",
+      "product_type": "Phôi dị hình + vát + hoa văn",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 33,
+      "process_id": "13",
+      "process_name": "Quy trình 13 (Phôi dị hình + vát + hoa văn)",
+      "product_type": "Phôi dị hình + vát + hoa văn",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 34,
+      "process_id": "13",
+      "process_name": "Quy trình 13 (Phôi dị hình + vát + hoa văn)",
+      "product_type": "Phôi dị hình + vát + hoa văn",
+      "step_order": 3,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 35,
+      "process_id": "13",
+      "process_name": "Quy trình 13 (Phôi dị hình + vát + hoa văn)",
+      "product_type": "Phôi dị hình + vát + hoa văn",
+      "step_order": 4,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 36,
+      "process_id": "14",
+      "process_name": "Quy trình 14 (Phôi dị hình + đa biên dạng)",
+      "product_type": "Phôi dị hình + đa biên dạng",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 37,
+      "process_id": "14",
+      "process_name": "Quy trình 14 (Phôi dị hình + đa biên dạng)",
+      "product_type": "Phôi dị hình + đa biên dạng",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 38,
+      "process_id": "14",
+      "process_name": "Quy trình 14 (Phôi dị hình + đa biên dạng)",
+      "product_type": "Phôi dị hình + đa biên dạng",
+      "step_order": 3,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 39,
+      "process_id": "14",
+      "process_name": "Quy trình 14 (Phôi dị hình + đa biên dạng)",
+      "product_type": "Phôi dị hình + đa biên dạng",
+      "step_order": 4,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 40,
+      "process_id": "15",
+      "process_name": "Quy trình 15 (Phôi thẳng + vát + đa biên dạng)",
+      "product_type": "Phôi thẳng + vát + đa biên dạng",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 41,
+      "process_id": "15",
+      "process_name": "Quy trình 15 (Phôi thẳng + vát + đa biên dạng)",
+      "product_type": "Phôi thẳng + vát + đa biên dạng",
+      "step_order": 2,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 42,
+      "process_id": "15",
+      "process_name": "Quy trình 15 (Phôi thẳng + vát + đa biên dạng)",
+      "product_type": "Phôi thẳng + vát + đa biên dạng",
+      "step_order": 3,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 43,
+      "process_id": "15",
+      "process_name": "Quy trình 15 (Phôi thẳng + vát + đa biên dạng)",
+      "product_type": "Phôi thẳng + vát + đa biên dạng",
+      "step_order": 4,
+      "capability_required": "Edge_complex",
+      "notes": null
+    },
+    {
+      "id": 44,
+      "process_id": "16",
+      "process_name": "Quy trình 16 (Đầy đủ tất cả công đoạn)",
+      "product_type": "Đầy đủ tất cả công đoạn",
+      "step_order": 1,
+      "capability_required": "Cut_straight",
+      "notes": null
+    },
+    {
+      "id": 45,
+      "process_id": "16",
+      "process_name": "Quy trình 16 (Đầy đủ tất cả công đoạn)",
+      "product_type": "Đầy đủ tất cả công đoạn",
+      "step_order": 2,
+      "capability_required": "Cut_contour",
+      "notes": null
+    },
+    {
+      "id": 46,
+      "process_id": "16",
+      "process_name": "Quy trình 16 (Đầy đủ tất cả công đoạn)",
+      "product_type": "Đầy đủ tất cả công đoạn",
+      "step_order": 3,
+      "capability_required": "Chamfer_45",
+      "notes": null
+    },
+    {
+      "id": 47,
+      "process_id": "16",
+      "process_name": "Quy trình 16 (Đầy đủ tất cả công đoạn)",
+      "product_type": "Đầy đủ tất cả công đoạn",
+      "step_order": 4,
+      "capability_required": "Edge_simple",
+      "notes": null
+    },
+    {
+      "id": 48,
+      "process_id": "16",
+      "process_name": "Quy trình 16 (Đầy đủ tất cả công đoạn)",
+      "product_type": "Đầy đủ tất cả công đoạn",
+      "step_order": 5,
+      "capability_required": "Edge_complex",
+      "notes": null
+    }
+  ],
+  "materials": [
+    {
+      "id": "100000470839",
+      "material_name": "DARK GREY EMPERADOR",
+      "material_type": "MARBLE",
+      "group_code": "B",
+      "notes": null
+    },
+    {
+      "id": "100000447257",
+      "material_name": "LIGHT EMPERADOR",
+      "material_type": "MARBLE",
+      "group_code": "B",
+      "notes": null
+    },
+    {
+      "id": "100000420858",
+      "material_name": "EMPERADOR GREY",
+      "material_type": "MARBLE",
+      "group_code": "B",
+      "notes": null
+    },
+    {
+      "id": "100000474067",
+      "material_name": "TRẮNG BÌNH ĐỊNH",
+      "material_type": "GRANITE",
+      "group_code": "A",
+      "notes": null
+    },
+    {
+      "id": "100000446895",
+      "material_name": "ABSOLUTE BLACK",
+      "material_type": "GRANITE",
+      "group_code": "A",
+      "notes": null
+    },
+    {
+      "id": "100000448092",
+      "material_name": "SUPER BLACK",
+      "material_type": "GRANITE",
+      "group_code": "A",
+      "notes": null
+    },
+    {
+      "id": "100000472537",
+      "material_name": "XÁM SA MẠC",
+      "material_type": "GRANITE",
+      "group_code": "A",
+      "notes": null
+    },
+    {
+      "id": "100000473806",
+      "material_name": "RUBY RED",
+      "material_type": "GRANITE",
+      "group_code": "A",
+      "notes": null
+    },
+    {
+      "id": "100000451598",
+      "material_name": "ĐEN BAZAN",
+      "material_type": "BAZAN",
+      "group_code": "C",
+      "notes": null
+    },
+    {
+      "id": "100000443841",
+      "material_name": "MARKINO BLACK",
+      "material_type": "GRANITE",
+      "group_code": "C",
+      "notes": null
+    },
+    {
+      "id": "100000466614",
+      "material_name": "INDIA WHITE",
+      "material_type": "GRANITE",
+      "group_code": "C",
+      "notes": null
+    },
+    {
+      "id": "100000473282",
+      "material_name": "ĐEN NGÂN HÀ",
+      "material_type": "GRANITE",
+      "group_code": "C",
+      "notes": null
+    },
+    {
+      "id": "100001000455",
+      "material_name": "ĐEN PHÚ YÊN",
+      "material_type": "GRANITE",
+      "group_code": "C",
+      "notes": null
+    },
+    {
+      "id": "100000474019",
+      "material_name": "CALACATTA VIOLA",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000449013",
+      "material_name": "CARRARA WHITE",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000470838",
+      "material_name": "FANTASY BLACK",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000466615",
+      "material_name": "WHITE WOODEN",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000415102",
+      "material_name": "XANH NAPOLI",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000465331",
+      "material_name": "BLACK FOREST",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000451729",
+      "material_name": "FOREST GREEN",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000446897",
+      "material_name": "VENUS WHITE",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000447050",
+      "material_name": "CRYSTAL WHITE",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000457951",
+      "material_name": "ICE CRYSTAL",
+      "material_type": "MARBLE",
+      "group_code": "D",
+      "notes": null
+    },
+    {
+      "id": "100000473365",
+      "material_name": "NUNG KẾT EXAMPLE",
+      "material_type": "SINTERED",
+      "group_code": "E",
+      "notes": null
+    },
+    {
+      "id": "100000451698",
+      "material_name": "KIM SA TRUNG",
+      "material_type": "GRANITE",
+      "group_code": "F",
+      "notes": null
+    },
+    {
+      "id": "100000462811",
+      "material_name": "ATHEN GOLDEN FLOWER",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000457952",
+      "material_name": "NOIR ST LAURENT",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000465457",
+      "material_name": "ROSSO ALICANTE",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000474346",
+      "material_name": "WOODEN BROWN",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000413118",
+      "material_name": "GOLDEN BROWN",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000451976",
+      "material_name": "BROWN VARIANT",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000462552",
+      "material_name": "GOLDEN VARIANT",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000422622",
+      "material_name": "GOLD FLOWER",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000472116",
+      "material_name": "GOLD DARK",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000463943",
+      "material_name": "EMPERADOR DARK",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000453672",
+      "material_name": "DARK EMPERADOR 2",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000458359",
+      "material_name": "EMPERADOR LIGHT 2",
+      "material_type": "MARBLE",
+      "group_code": "G",
+      "notes": null
+    },
+    {
+      "id": "100000451699",
+      "material_name": "NERO MARQUINA",
+      "material_type": "MARBLE",
+      "group_code": "H",
+      "notes": null
+    },
+    {
+      "id": "100000466310",
+      "material_name": "QUARTZ SAMPLE 1",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000467688",
+      "material_name": "QUARTZ SAMPLE 2",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000470767",
+      "material_name": "QUARTZ SAMPLE 3",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000472539",
+      "material_name": "QUARTZ SAMPLE 4",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100001000611",
+      "material_name": "QUARTZ SAMPLE 5",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000462414",
+      "material_name": "QUARTZ SAMPLE 6",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000470511",
+      "material_name": "QUARTZ SAMPLE 7",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000472868",
+      "material_name": "QUARTZ SAMPLE 8",
+      "material_type": "QUARTZ",
+      "group_code": "I",
+      "notes": null
+    },
+    {
+      "id": "100000433186",
+      "material_name": "ORIENTAL WHITE",
+      "material_type": "MARBLE",
+      "group_code": "J",
+      "notes": "Onyx"
+    },
+    {
+      "id": "100000450720",
+      "material_name": "ONYX SAMPLE 2",
+      "material_type": "MARBLE",
+      "group_code": "J",
+      "notes": "Onyx"
+    },
+    {
+      "id": "100000469510",
+      "material_name": "ONYX SAMPLE 3",
+      "material_type": "MARBLE",
+      "group_code": "J",
+      "notes": "Onyx"
+    },
+    {
+      "id": "100000470441",
+      "material_name": "ONYX SAMPLE 4",
+      "material_type": "MARBLE",
+      "group_code": "J",
+      "notes": "Onyx"
+    },
+    {
+      "id": "100001000610",
+      "material_name": "PLATTINUM GREY",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100000458522",
+      "material_name": "POLARIS WHITE",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100000448090",
+      "material_name": "WHITE POLARIS 2",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100000466091",
+      "material_name": "POLARIS VARIANT",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100001000589",
+      "material_name": "POLARIS GREY",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100000468857",
+      "material_name": "GREY POLARIS",
+      "material_type": "MARBLE",
+      "group_code": "K",
+      "notes": null
+    },
+    {
+      "id": "100000471919",
+      "material_name": "VOLAKAS BUTTERFLY",
+      "material_type": "MARBLE",
+      "group_code": "L",
+      "notes": null
+    },
+    {
+      "id": "100000465505",
+      "material_name": "VOLAKAS ÍT VÂN",
+      "material_type": "MARBLE",
+      "group_code": "L",
+      "notes": null
+    },
+    {
+      "id": "100000447721",
+      "material_name": "VOLAKAS EXTRA",
+      "material_type": "MARBLE",
+      "group_code": "L",
+      "notes": null
+    },
+    {
+      "id": "100000451695",
+      "material_name": "ARISTON WHITE",
+      "material_type": "MARBLE",
+      "group_code": "L",
+      "notes": null
+    },
+    {
+      "id": "100000470705",
+      "material_name": "VOLAKAS WHITE",
+      "material_type": "MARBLE",
+      "group_code": "L",
+      "notes": null
+    }
+  ]
+}

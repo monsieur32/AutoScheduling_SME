@@ -1,0 +1,16 @@
+/* =============================================
+   APP LAYOUT — Sidebar + Main Content
+   Tương đương Streamlit layout="wide" + sidebar
+   ============================================= */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  margin-left: var(--sidebar-width);
+  padding: 1.5rem 2rem;
+  flex: 1;
+  max-width: calc(100vw - var(--sidebar-width));
+}
