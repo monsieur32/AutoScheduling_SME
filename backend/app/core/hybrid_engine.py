@@ -102,7 +102,7 @@ class HybridEngine:
         speed = m_data.get('speed_matrix', {}).get(material_group, {}).get(size_cat, 500.0)
         return int(size_mm / speed) + 5
 
-    def run_ga_simulation(self, jobs, initial_machine_avail=None, initial_machine_last_job=None):
+    def run_ga_simulation(self, jobs, initial_machine_avail=None, initial_machine_last_job=None, overtime_config=None):
         print("Starting GA-VNS Optimizer...")
         solver = GAVNSSolver(
             jobs=jobs,
@@ -112,7 +112,8 @@ class HybridEngine:
             max_gen=50,
             tightness_factor=1.5,
             initial_machine_avail=initial_machine_avail,
-            initial_machine_last_job=initial_machine_last_job
+            initial_machine_last_job=initial_machine_last_job,
+            overtime_config=overtime_config
         )
         options = solver.solve()
 
@@ -124,7 +125,7 @@ class HybridEngine:
 
         return options
 
-    def solve(self, input_jobs, use_ml=True, initial_machine_avail=None, initial_machine_last_job=None):
+    def solve(self, input_jobs, use_ml=True, initial_machine_avail=None, initial_machine_last_job=None, overtime_config=None):
         print("--- PHASE 1: HYBRID PRE-PROCESSING ---")
         itemized_jobs, logs = self.apply_expert_constraints(input_jobs, use_ml=use_ml)
         for l in logs:
@@ -134,7 +135,8 @@ class HybridEngine:
         options = self.run_ga_simulation(
             itemized_jobs,
             initial_machine_avail=initial_machine_avail,
-            initial_machine_last_job=initial_machine_last_job
+            initial_machine_last_job=initial_machine_last_job,
+            overtime_config=overtime_config
         )
         print(f"Optimization Complete. Generated {len(options)} options.")
 

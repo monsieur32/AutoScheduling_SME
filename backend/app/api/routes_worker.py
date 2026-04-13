@@ -7,9 +7,9 @@ POST /api/worker/complete/{job_id} → Mark job as completed
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from ..database.session import get_db
 from ..database.models import ScheduledOperation, JobQueue
+from ..services.telemetry_service import log_job_start, log_job_end, log_job_pause
 
 router = APIRouter(prefix="/api/worker", tags=["Worker Actions"])
 
@@ -31,6 +31,9 @@ def accept_job(job_id: str, machine_id: str = None, db: Session = Depends(get_db
 
     for op in ops:
         op.worker_status = "accepted"
+    
+    # Hidden Telemetry: Log job start
+    log_job_start(db, job_id, machine_id)
 
     db.commit()
     return {"job_id": job_id, "status": "accepted", "operations_updated": len(ops)}
@@ -51,6 +54,9 @@ def pause_job(job_id: str, machine_id: str = None, db: Session = Depends(get_db)
 
     for op in ops:
         op.worker_status = "paused"
+    
+    # Hidden Telemetry: Flag pause
+    log_job_pause(db, job_id, machine_id)
 
     db.commit()
     return {"job_id": job_id, "status": "paused", "operations_updated": len(ops)}
@@ -85,6 +91,9 @@ def complete_job(job_id: str, machine_id: str = None, db: Session = Depends(get_
         job = db.query(JobQueue).filter(JobQueue.id == job_id).first()
         if job:
             job.status = "completed"
+    
+    # Hidden Telemetry: Log job end
+    log_job_end(db, job_id, machine_id)
 
     db.commit()
 

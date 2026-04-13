@@ -2,9 +2,10 @@ import random
 import copy
 import time
 from collections import defaultdict
+from .time_manager import ShiftManager
 
 class GAVNSSolver:
-    def __init__(self, jobs, machines_data, calculate_duration_fn, pop_size=100, max_gen=100, tightness_factor=1.5, initial_machine_avail=None, initial_machine_last_job=None):
+    def __init__(self, jobs, machines_data, calculate_duration_fn, pop_size=100, max_gen=100, tightness_factor=1.5, initial_machine_avail=None, initial_machine_last_job=None, overtime_config=None):
         """
         Khởi tạo bộ giải GA-VNS cho bài toán Flexible Job Shop Scheduling.
         jobs: List các job cần lập lịch.
@@ -25,6 +26,7 @@ class GAVNSSolver:
         
         self.initial_machine_avail = initial_machine_avail or {}
         self.initial_machine_last_job = initial_machine_last_job or {}
+        self.shift_manager = ShiftManager(overtime_config=overtime_config)
         
         self.num_jobs = len(jobs)
         self.job_dict = {job['id']: job for job in jobs}
@@ -124,11 +126,17 @@ class GAVNSSolver:
 
     def get_setup_time(self, m_id, prev_job_id, curr_job_id):
         # Mô phỏng Sequence-Dependent Setup Time.
-        # Nếu có setup_matrix trong máy thì dùng, nếu không thì trả về setup mặc định.
+        # Ưu tiên 1: Giá trị thủ công do user nhập — override mọi logic tự động
+        if curr_job_id in self.job_dict:
+            manual_setup = self.job_dict[curr_job_id].get('manual_setup_time')
+            if manual_setup is not None:
+                return manual_setup
+
+        # Ưu tiên 2: Job đầu tiên trên máy (prev=None) hoặc chính nó
         if prev_job_id is None or prev_job_id == curr_job_id:
             return 5
-            
-        # Kiểm tra xem 2 job có thuộc cùng 1 lô (master job) không
+
+        # Ưu tiên 3: Kiểm tra xem 2 job có thuộc cùng 1 lô (master job) không
         # Ví dụ: JOB-001.1_abc và JOB-001.2_xyz -> cùng lô JOB-001
         def get_master_id(j_id):
             if j_id and '.' in j_id:
@@ -137,18 +145,18 @@ class GAVNSSolver:
 
         prev_master = get_master_id(prev_job_id)
         curr_master = get_master_id(curr_job_id)
-        
+
         if prev_master == curr_master:
             # Cùng 1 lô đơn hàng, thời gian Setup chuyển tiếp ngắn hơn
             return 5
-            
+
+        # Ưu tiên 4: Setup matrix nếu có
         machine_info = self.machines_data.get(m_id, {})
         setup_matrix = machine_info.get("setup_matrix", {})
         if prev_job_id in setup_matrix and curr_job_id in setup_matrix[prev_job_id]:
             return setup_matrix[prev_job_id][curr_job_id]
-        
-        # Sequence ngẫu nhiên giả lập nếu ko có (trong thực tế lấy từ data)
-        # Setup = 10 phút nếu đổi job hoàn toàn mới
+
+        # Mặc định: 10 phút nếu đổi job hoàn toàn mới
         return 10
 
     # --- INITIALIZATION STRATEGIES ---
@@ -262,13 +270,24 @@ class GAVNSSolver:
             
             # Cân nhắc setup time vào lịch trình
             if machine_avail[m_id] <= job_avail[job_id]:
-                # Máy rảnh trước job, xử lý setup
-                actual_start = max(job_avail[job_id], machine_avail[m_id] + setup)
+                # Máy rảnh trước job
+                job_wait_time = job_avail[job_id] - machine_avail[m_id]
+                if job_wait_time >= setup:
+                    # Máy setup trong lúc đợi job (coi như setup xong cùng lúc job đến hoặc sớm hơn)
+                    actual_start = self.shift_manager.get_next_working_time(job_avail[job_id])
+                else:
+                    # Bắt đầu setup ngay lập tức, job đến sau nhưng máy chưa setup xong
+                    start_setup = self.shift_manager.get_next_working_time(machine_avail[m_id])
+                    finish_setup = self.shift_manager.add_working_time(start_setup, setup)
+                    actual_start = self.shift_manager.get_next_working_time(max(job_avail[job_id], finish_setup))
             else:
-                # Job rảnh trước máy, máy phải setup xong
-                actual_start = machine_avail[m_id] + setup
+                # Job rảnh trước máy, máy phải setup xong mới bắt đầu
+                start_setup = self.shift_manager.get_next_working_time(machine_avail[m_id])
+                finish_setup = self.shift_manager.add_working_time(start_setup, setup)
+                actual_start = start_setup # Wait, actual_start is AFTER setup. No wait, actual_start for the job is finish_setup
+                actual_start = finish_setup
                 
-            finish_time = actual_start + dur
+            finish_time = self.shift_manager.add_working_time(actual_start, dur)
             
             total_setup_time += setup
             machine_avail[m_id] = finish_time

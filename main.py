@@ -428,7 +428,11 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
                         
                         # Nút bấm để chọn phương án này
                         if st.button(f"Chọn Phương án {idx+1}", key=f"btn_choose_opt_{idx}", type="primary"):
-                            st.session_state.scheduled_jobs = opt['schedule']
+                            selected_schedule = opt['schedule']
+                            for j_op in selected_schedule:
+                                if 'status' not in j_op:
+                                    j_op['status'] = 'pending'
+                            st.session_state.scheduled_jobs = selected_schedule
                             st.session_state.schedule_options = None 
                             st.success(f"Đã chọn {opt['name']}!")
                             st.rerun() 
@@ -464,23 +468,43 @@ elif tab_selection == "2. Bảng điều độ sản xuất":
         # Gán trạng thái hiện tại vào data để tô màu
         df_schedule['machine_status'] = df_schedule['machine'].apply(lambda m: machine_status_map.get(m, "On"))
 
-        # Biểu đồ sạch
-        # Color theo trạng thái máy thay vì Loại thuật toán
+        def get_display_color(row):
+            j_status = row.get('status', 'pending')
+            m_status = machine_status_map.get(row['machine'], "On")
+            if j_status == 'completed': return "Hoàn thành"
+            elif j_status == 'in_progress': return "Đang chạy"
+            else:
+                if m_status == 'Maintenance': return "Chờ - Bảo trì"
+                if m_status == 'Off': return "Chờ - Tắt máy"
+                return "Chờ - Bình thường"
+
+        df_schedule['display_color'] = df_schedule.apply(get_display_color, axis=1)
+
+        def format_text(row):
+            j_status = row.get('status', 'pending')
+            if j_status == 'completed': return f"[Xong] {row['job_id']}"
+            elif j_status == 'in_progress': return f"[Đang chạy] {row['job_id']}"
+            return row['job_id']
+            
+        df_schedule['display_text'] = df_schedule.apply(format_text, axis=1)
+
         color_map = {
-            "On": "#1B5E20",         # Xanh lá đậm (Bình thường)
-            "Off": "#757575",        # Xám (Tắt máy)
-            "Maintenance": "#B71C1C" # Đỏ (Bảo trì)
+            "Hoàn thành": "rgba(176, 190, 197, 0.4)", # Light Gray Mờ
+            "Đang chạy": "#1976D2",                   # Blue chuyên nghiệp
+            "Chờ - Bình thường": "#1B5E20",           # Green
+            "Chờ - Tắt máy": "#757575",               # Gray
+            "Chờ - Bảo trì": "#B71C1C"                # Red
         }
         
         fig = px.timeline(
             df_schedule, 
             x_start="Start_Time", x_end="Finish_Time", 
             y="machine",    
-            color="machine_status",
+            color="display_color",
             color_discrete_map=color_map,
-            hover_data=["job_id", "note", "machine_status"],
+            hover_data=["job_id", "note", "machine_status", "status"],
             title="",
-            text="job_id"
+            text="display_text"
         )
         fig.update_traces(
             textposition="inside",
@@ -756,6 +780,9 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
                                             )
                                             # Tự động chọn phương án Cân Bằng (Option 0)
                                             best_opt = engine_opts[0]['schedule']
+                                            for j_op in best_opt:
+                                                if 'status' not in j_op:
+                                                    j_op['status'] = 'pending'
                                             st.session_state.scheduled_jobs = unaffected_schedule + best_opt
                                             st.success("Tái lập lịch thành công! Đã tạo chuỗi lịch trình mới thay thế.")
                                         else:
@@ -783,40 +810,69 @@ elif tab_selection == "3. Giao diện Máy (Công nhân)":
             if len(my_jobs) == 0:
                 st.success(f"{selected_machine} hiện không có công việc nào!")
             else:
-                for idx, job in enumerate(my_jobs):
+                in_progress_jobs = [j for j in my_jobs if j.get('status') == 'in_progress']
+                pending_jobs = [j for j in my_jobs if j.get('status', 'pending') == 'pending']
+                completed_jobs = [j for j in my_jobs if j.get('status') == 'completed']
+
+                def render_job_card(job, card_type="pending"):
                     with st.container(border=True):
                         c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
                         
-                        # Job ID & Tình trạng rút gọn
-                        if idx == 0:
-                            c1.markdown(f"**{job['job_id']}**  \n*(Đang thực thi)*")
-                        else:
-                            c1.markdown(f"**{job['job_id']}**  \n*(Đang chờ)*")
+                        lbl = "Đang chờ"
+                        if card_type == "in_progress": lbl = "Đang thực thi"
+                        elif card_type == "completed": lbl = "Đã hoàn thành"
+                        c1.markdown(f"**{job['job_id']}**  \n*({lbl})*")
                         
-                        # Thời gian (mô phỏng từ mốc 07:00)
                         start_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['start'])).strftime('%H:%M')
                         end_str = (datetime.now().replace(hour=7, minute=0) + timedelta(minutes=job['finish'])).strftime('%H:%M')
                         duration = job['finish'] - job['start']
                         
                         c2.write(f" {start_str} - {end_str} ({duration} phút)")
-                        if idx == 0:
+                        if card_type == "in_progress":
                             c2.progress(0.4) 
                             
-                        # Ghi chú / Trạng thái
                         if job['note'] == "Expert Intervention":
-                            c3.warning("Chạy chế độ an toàn")
+                            c3.warning("Chạy an toàn")
                         else:
-                            c3.info("Chế độ tiêu chuẩn")
+                            c3.info("Tiêu chuẩn")
                         
-                        # Hành động
-                        if c4.button(" Hoàn Thành", key=f"btn_{job['job_id']}", type="primary" if idx == 0 else "secondary"):
-                            # Xóa job khỏi danh sách phân công
-                            st.session_state.scheduled_jobs = [j for j in st.session_state.scheduled_jobs if j['job_id'] != job['job_id']]
-                            # Xóa job khỏi hàng đợi
-                            st.session_state.jobs_queue = [q for q in st.session_state.jobs_queue if q['id'] != job['job_id']]
-                                
-                            st.toast(f" Máy {selected_machine} đã hoàn thành {job['job_id']}!")
-                            st.rerun()
+                        if card_type == "pending":
+                            if c4.button(" Bắt Đầu", key=f"btn_start_{job['job_id']}", type="primary"):
+                                for sj in st.session_state.scheduled_jobs:
+                                    if sj['job_id'] == job['job_id']:
+                                        sj['status'] = 'in_progress'
+                                st.rerun()
+                        elif card_type == "in_progress":
+                            if c4.button(" Hoàn Thành", key=f"btn_done_{job['job_id']}", type="primary"):
+                                for sj in st.session_state.scheduled_jobs:
+                                    if sj['job_id'] == job['job_id']:
+                                        sj['status'] = 'completed'
+                                st.toast(f"Máy {selected_machine} đã hoàn thành {job['job_id']}!")
+                                st.rerun()
+                        elif card_type == "completed":
+                            if c4.button(" Hoàn Tác", key=f"btn_undo_{job['job_id']}", type="secondary"):
+                                for sj in st.session_state.scheduled_jobs:
+                                    if sj['job_id'] == job['job_id']:
+                                        sj['status'] = 'pending'
+                                st.rerun()
+
+                st.markdown("##### [ĐANG THỰC THI]")
+                if not in_progress_jobs:
+                    st.write("Không có công việc nào đang chạy.")
+                for job in in_progress_jobs:
+                    render_job_card(job, "in_progress")
+
+                st.markdown("##### [HÀNG ĐỢI]")
+                if not pending_jobs:
+                    st.write("Không có công việc trong hàng đợi.")
+                for job in pending_jobs:
+                    render_job_card(job, "pending")
+
+                st.markdown("##### [LỊCH SỬ - ĐÃ HOÀN THÀNH]")
+                if not completed_jobs:
+                    st.write("Chưa có công việc nào hoàn thành.")
+                for job in completed_jobs:
+                    render_job_card(job, "completed")
         elif selected_machine:
             st.success("Chọn máy khác phía trên!")
             

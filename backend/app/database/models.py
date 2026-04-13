@@ -11,6 +11,9 @@ from datetime import datetime
 
 Base = declarative_base()
 
+# Import Telemetry model here to ensure it's registered with Base for create_all()
+from .telemetry_model import MLProductionLog 
+
 # ─── Original Models (ported from database/models.py) ───────────────
 
 class Material(Base):
@@ -92,6 +95,7 @@ class JobQueue(Base):
     detail_len_mm = Column(Float, nullable=True)
     complexity = Column(Float, default=0.0)
     quantity = Column(Integer, default=1)
+    manual_setup_time = Column(Integer, nullable=True)
     operations = Column(JSON, nullable=True)  # list of capability strings
     process = Column(String, nullable=True)
     process_machine = Column(String, nullable=True)
@@ -115,6 +119,16 @@ class ScheduledOperation(Base):
     setup = Column(Integer, default=0)
     note = Column(String, nullable=True)
     worker_status = Column(String, default="pending")  # pending | accepted | paused | completed
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ScheduleConfig(Base):
+    """Stores metadata/settings for the active schedule (e.g. overtime)."""
+    __tablename__ = 'schedule_config'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    schedule_version = Column(Integer, ForeignKey('scheduled_operations.schedule_version'))
+    overtime_enabled = Column(Integer, default=0) # 0 or 1
+    overtime_end_mins = Column(Integer, default=510) # minutes from 07:00
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

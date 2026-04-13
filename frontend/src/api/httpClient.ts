@@ -53,8 +53,8 @@ export const updateMachineStatus = (id: string, status: string) =>
 export const getMachineJobs = (id: string) => request<any>(`/api/machines/${id}/jobs`);
 
 // ── Schedule ────────────────────────────────────────────────────────
-export const runSchedule = (useMl = true) =>
-  request<any>('/api/schedule/run', { method: 'POST', body: JSON.stringify({ use_ml: useMl }) });
+export const runSchedule = (useMl = true, overtimeConfig?: any) =>
+  request<any>('/api/schedule/run', { method: 'POST', body: JSON.stringify({ use_ml: useMl, overtime_config: overtimeConfig }) });
 export const getScheduleStatus = (token: string) =>
   request<any>(`/api/schedule/status/${token}`);
 export const selectSchedule = (token: string, optionIndex: number) =>

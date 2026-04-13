@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from ..database.session import get_db
-from ..database.models import JobQueue, ScheduledOperation, Machine
+from ..database.models import JobQueue, ScheduledOperation, Machine, ScheduleConfig
 from ..tasks.task_manager import task_manager
 from ..tasks.background_tasks import schedule_run_task, _load_machines_data_from_db
 from ..models.schedule_schemas import (
@@ -54,6 +54,7 @@ def run_schedule(req: ScheduleRunRequest, db: Session = Depends(get_db)):
             "detail_len_mm": j.detail_len_mm or j.size_mm,
             "complexity": j.complexity,
             "quantity": j.quantity,
+            "manual_setup_time": j.manual_setup_time,  # None = Auto, int = override
             "operations": j.operations or [],
             "start_time": j.start_time or datetime.now().replace(hour=7, minute=0, second=0),
             "due_date": j.due_date or datetime.now().replace(hour=17, minute=0, second=0),
@@ -67,6 +68,7 @@ def run_schedule(req: ScheduleRunRequest, db: Session = Depends(get_db)):
         req.use_ml,
         req.initial_machine_avail,
         req.initial_machine_last_job,
+        req.overtime_config,
     )
 
     return TaskToken(task_token=token, message=f"Scheduling {len(jobs_list)} jobs in background")
@@ -103,13 +105,22 @@ def select_schedule(req: ScheduleSelectRequest, token: str, db: Session = Depend
 
     Query param `token` is the task_token from the scheduling run.
     """
-    options = _pending_options.get(token)
-    if not options:
+    result_data = _pending_options.get(token)
+    if not result_data:
         # Try to get from task manager
         info = task_manager.get_status(token)
         if not info or info.status != "completed" or not info.result:
             raise HTTPException(status_code=404, detail="No schedule options found for this token")
-        options = info.result
+        result_data = info.result
+
+    # New structure: result_data is {"options": [...], "overtime_config": {...}}
+    # Fallback for old tasks if any
+    if isinstance(result_data, list):
+        options = result_data
+        overtime_config = None
+    else:
+        options = result_data.get("options", [])
+        overtime_config = result_data.get("overtime_config", None)
 
     if req.option_index >= len(options):
         raise HTTPException(status_code=400, detail=f"Option index {req.option_index} out of range")
@@ -125,6 +136,7 @@ def select_schedule(req: ScheduleSelectRequest, token: str, db: Session = Depend
 
     # Clear existing active schedule
     db.query(ScheduledOperation).delete()
+    db.query(ScheduleConfig).delete() # Also clear old config
 
     # Persist selected schedule
     for op in schedule:
@@ -139,6 +151,15 @@ def select_schedule(req: ScheduleSelectRequest, token: str, db: Session = Depend
             note=op.get("note", ""),
         )
         db.add(db_op)
+
+    # Persist the config used
+    if overtime_config:
+        db_cfg = ScheduleConfig(
+            schedule_version=new_version,
+            overtime_enabled=1 if overtime_config.get("enabled") else 0,
+            overtime_end_mins=overtime_config.get("end_time_mins", 510)
+        )
+        db.add(db_cfg)
 
     # Update job statuses to 'scheduled'
     job_ids = list(set(op["job_id"] for op in schedule))
@@ -164,6 +185,7 @@ def select_schedule(req: ScheduleSelectRequest, token: str, db: Session = Depend
         ) for op in ops],
         version=new_version,
         total_operations=len(ops),
+        overtime_config=overtime_config
     )
 
 
@@ -182,6 +204,15 @@ def get_current_schedule(db: Session = Depends(get_db)):
         ScheduledOperation.schedule_version == version
     ).order_by(ScheduledOperation.start).all()
 
+    # Get overtime config
+    cfg = db.query(ScheduleConfig).filter(ScheduleConfig.schedule_version == version).first()
+    overtime_config = None
+    if cfg:
+        overtime_config = {
+            "enabled": bool(cfg.overtime_enabled),
+            "end_time_mins": cfg.overtime_end_mins
+        }
+
     return ScheduleRunResponse(
         schedule=[OperationResponse(
             id=op.id, job_id=op.job_id, op_idx=op.op_idx, machine=op.machine,
@@ -190,6 +221,7 @@ def get_current_schedule(db: Session = Depends(get_db)):
         ) for op in ops],
         version=version,
         total_operations=len(ops),
+        overtime_config=overtime_config
     )
 
 
@@ -305,6 +337,7 @@ def reschedule(req: RescheduleRequest, db: Session = Depends(get_db)):
             "detail_len_mm": j.detail_len_mm or j.size_mm,
             "complexity": j.complexity,
             "quantity": j.quantity,
+            "manual_setup_time": j.manual_setup_time,  # None = Auto, int = override
             "operations": j.operations or [],
             "start_time": j.start_time or datetime.now().replace(hour=7, minute=0),
             "due_date": j.due_date or datetime.now().replace(hour=17, minute=0),
@@ -327,5 +360,6 @@ def reschedule(req: RescheduleRequest, db: Session = Depends(get_db)):
 def clear_schedule(db: Session = Depends(get_db)):
     """Clear the current schedule."""
     db.query(ScheduledOperation).delete()
+    db.query(ScheduleConfig).delete()
     db.query(JobQueue).update({"status": "queued"}, synchronize_session=False)
     db.commit()

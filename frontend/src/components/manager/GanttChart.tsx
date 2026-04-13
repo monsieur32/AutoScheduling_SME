@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
-import { getCurrentSchedule, listMachines, listJobs, manualAdjust } from '../../api/httpClient';
+import { getCurrentSchedule, listMachines, listJobs, manualAdjust, clearSchedule, clearAllJobs } from '../../api/httpClient';
 
 /* ── Types ─────────────────────────────────────────────────── */
 interface Operation {
@@ -29,9 +29,13 @@ const ROW_HEIGHT = 48;
 const BAR_PADDING = 6;
 
 function minuteToTime(m: number): string {
-  const h = Math.floor(m / 60) + 7;
-  const min = m % 60;
-  return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+  const day = Math.floor(m / 1440);
+  const minInDay = Math.floor(m % 1440);
+  const h = Math.floor(minInDay / 60) + 7;
+  const hFmt = (h >= 24 ? h - 24 : h).toString().padStart(2, '0');
+  const min = minInDay % 60;
+  const timeStr = `${hFmt}:${min.toString().padStart(2, '0')}`;
+  return day > 0 ? `Ngày ${day + 1} ${timeStr}` : timeStr;
 }
 
 /* ── Component ─────────────────────────────────────────────── */
@@ -44,6 +48,19 @@ export default function GanttChart() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [showDetail, setShowDetail] = useState(false);
+  const [overtimeConfig, setOvertimeConfig] = useState<any>(null);
+
+  const handleClearData = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xoá TOÀN BỘ Lịch trình và Dữ liệu công việc để làm lại từ đầu không?")) return;
+    try {
+      await clearSchedule();
+      await clearAllJobs();
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi xoá dữ liệu");
+    }
+  };
   const [detailData, setDetailData] = useState<any[]>([]);
   const [jobsQueue, setJobsQueue] = useState<any[]>([]);
 
@@ -53,6 +70,7 @@ export default function GanttChart() {
       const [schedData, machData, jobsData] = await Promise.all([
         getCurrentSchedule(), listMachines(), listJobs(),
       ]);
+      setOvertimeConfig(schedData.overtime_config || null);
       setOperations(schedData.schedule || []);
       const statusMap: Record<string, string> = {};
       (machData.machines || []).forEach((m: MachineInfo) => { statusMap[m.id] = m.status; });
@@ -134,6 +152,79 @@ export default function GanttChart() {
       .attr('y1', 0).attr('y2', chartHeight)
       .attr('stroke', 'rgba(255,255,255,0.04)').attr('stroke-dasharray', '3 6');
 
+    // Diagonal hatch pattern
+    const defs = svg.append('defs');
+
+    // Lunch break pattern — red tint + dense diagonal
+    const lunchPattern = defs.append('pattern')
+      .attr('id', 'lunchHatch')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 8)
+      .attr('height', 8);
+    lunchPattern.append('rect')
+      .attr('width', 8).attr('height', 8)
+      .attr('fill', 'rgba(220, 38, 38, 0.18)'); // red tint background
+    lunchPattern.append('path')
+      .attr('d', 'M-1,1 l2,-2 M0,8 l8,-8 M7,9 l2,-2')
+      .attr('stroke', 'rgba(220, 38, 38, 0.55)')
+      .attr('stroke-width', 1.8);
+
+    // Off-hours pattern — dark gray + wide diagonal
+    const offPattern = defs.append('pattern')
+      .attr('id', 'offHatch')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 12)
+      .attr('height', 12);
+    offPattern.append('rect')
+      .attr('width', 12).attr('height', 12)
+      .attr('fill', 'rgba(15, 23, 42, 0.4)'); // Giảm opacity nền một chút
+    offPattern.append('path')
+      .attr('d', 'M-1,1 l2,-2 M0,12 l12,-12 M11,13 l2,-2')
+      .attr('stroke', 'rgba(100, 116, 139, 0.4)')
+      .attr('stroke-width', 1.0);
+
+    // Overtime pattern — orange tint + thin diagonal
+    const overtimePattern = defs.append('pattern')
+      .attr('id', 'overtimeHatch')
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 10)
+      .attr('height', 10);
+    overtimePattern.append('rect')
+      .attr('width', 10).attr('height', 10)
+      .attr('fill', 'rgba(245, 158, 11, 0.08)'); // orange tilt
+    overtimePattern.append('path')
+      .attr('d', 'M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2')
+      .attr('stroke', 'rgba(245, 158, 11, 0.35)')
+      .attr('stroke-width', 1.2);
+
+    // Break block data — will be rendered AFTER bars so they stay on top
+    const breakBlocks: { start: number; end: number; type: string }[] = [];
+    const maxDays = Math.ceil(maxFinish / 1440) + 1;
+    for (let day = 0; day <= maxDays; day++) {
+      const lunchStart = day * 1440 + 265;
+      const lunchEnd = day * 1440 + 310;
+      if (lunchStart < maxFinish && lunchEnd > minStart) {
+        breakBlocks.push({ start: Math.max(minStart, lunchStart), end: Math.min(maxFinish, lunchEnd), type: 'lunch' });
+      }
+
+      const adminEnd = day * 1440 + 510; // 15:30
+      let overtimeEnd = adminEnd;
+      if (overtimeConfig?.enabled) {
+        overtimeEnd = day * 1440 + overtimeConfig.end_time_mins;
+      }
+
+      // Overtime region (15:30 -> actual end)
+      if (overtimeEnd > adminEnd && adminEnd < maxFinish && overtimeEnd > minStart) {
+        breakBlocks.push({ start: Math.max(minStart, adminEnd), end: Math.min(maxFinish, overtimeEnd), type: 'overtime' });
+      }
+
+      const offStart = overtimeEnd;
+      const offEnd = (day + 1) * 1440 + 30;
+      if (offStart < maxFinish && offEnd > minStart) {
+        breakBlocks.push({ start: Math.max(minStart, offStart), end: Math.min(maxFinish, offEnd), type: 'offhours' });
+      }
+    }
+
     // Row backgrounds
     g.append('g').selectAll('rect').data(machineIds).join('rect')
       .attr('x', 0).attr('width', chartWidth)
@@ -162,12 +253,52 @@ export default function GanttChart() {
     if (currentMinute >= minStart && currentMinute <= maxFinish) {
       g.append('line')
         .attr('x1', xScale(currentMinute)).attr('x2', xScale(currentMinute))
-        .attr('y1', -10).attr('y2', chartHeight + 5)
-        .attr('stroke', '#ef4444').attr('stroke-width', 2).attr('stroke-dasharray', '6 3');
+        .attr('y1', -15).attr('y2', chartHeight + 10)
+        .attr('stroke', 'var(--accent-cyan)').attr('stroke-width', 2).attr('stroke-dasharray', '4 2');
       g.append('text')
-        .attr('x', xScale(currentMinute)).attr('y', -15)
-        .attr('text-anchor', 'middle').attr('fill', '#ef4444').attr('font-size', 10).attr('font-weight', 700)
-        .text('NOW');
+        .attr('x', xScale(currentMinute)).attr('y', -20)
+        .attr('text-anchor', 'middle').attr('fill', 'var(--accent-cyan)').attr('font-size', 9).attr('font-weight', 800)
+        .text('HIỆN TẠI');
+    }
+
+    // Shift boundary lines (15:30 and Dynamic End)
+    for (let day = 0; day <= maxDays; day++) {
+      const adminEnd = day * 1440 + 510;
+      const isOt = overtimeConfig?.enabled && overtimeConfig.end_time_mins > 510;
+      const shiftEnd = isOt ? (day * 1440 + overtimeConfig.end_time_mins) : adminEnd;
+
+      // Always show 15:30 if it's not the final end line
+      if (isOt && adminEnd >= minStart && adminEnd <= maxFinish) {
+        g.append('line')
+          .attr('x1', xScale(adminEnd)).attr('x2', xScale(adminEnd))
+          .attr('y1', 0).attr('y2', chartHeight)
+          .attr('stroke', 'rgba(255,255,255,0.1)').attr('stroke-width', 1).attr('stroke-dasharray', '2 2');
+
+        g.append('text')
+          .attr('x', xScale(adminEnd)).attr('y', chartHeight + 12)
+          .attr('text-anchor', 'middle').attr('fill', 'var(--text-muted)').attr('font-size', 8)
+          .text('HẾT GIỜ HC');
+      }
+
+      if (shiftEnd >= minStart && shiftEnd <= maxFinish) {
+        g.append('line')
+          .attr('x1', xScale(shiftEnd)).attr('x2', xScale(shiftEnd))
+          .attr('y1', -10).attr('y2', chartHeight + 5)
+          .attr('stroke', 'var(--accent-red)').attr('stroke-width', 1.5).attr('stroke-dasharray', '10 5');
+
+        g.append('text')
+          .attr('x', xScale(shiftEnd)).attr('y', -15)
+          .attr('text-anchor', 'middle').attr('fill', 'var(--accent-red)').attr('font-size', 10).attr('font-weight', 700)
+          .text(isOt ? 'HẾT GIỜ TĂNG CA' : 'HẾT CA 15:30');
+      }
+
+      const nextShiftStart = day * 1440 + 30;
+      if (nextShiftStart >= minStart && nextShiftStart <= maxFinish && day > 0) {
+        g.append('line')
+          .attr('x1', xScale(nextShiftStart)).attr('x2', xScale(nextShiftStart))
+          .attr('y1', -10).attr('y2', chartHeight + 5)
+          .attr('stroke', 'var(--accent-green)').attr('stroke-width', 1).attr('stroke-dasharray', '5 5');
+      }
     }
 
     const tooltip = d3.select(tooltipRef.current);
@@ -180,8 +311,18 @@ export default function GanttChart() {
       const h = yScale.bandwidth() - BAR_PADDING * 2;
       const x = xScale(op.start);
       const w = Math.max(xScale(op.finish) - xScale(op.start), 4);
+      const workerStatus = op.worker_status || 'pending';
       const machStatus = machineStatusMap[op.machine] || 'On';
-      const color = STATUS_COLORS[machStatus] || STATUS_COLORS['On'];
+      let color = STATUS_COLORS[machStatus] || STATUS_COLORS['On'];
+      let baseOpacity = 0.85;
+
+      if (workerStatus === 'completed') {
+        color = 'rgba(176, 190, 197, 0.4)'; // Xám tắt
+        baseOpacity = 0.5;
+      } else if (workerStatus === 'accepted') {
+        color = '#1976D2'; // Xanh đang chạy
+        baseOpacity = 0.95;
+      }
 
       // Setup block
       if (op.setup > 0) {
@@ -189,23 +330,27 @@ export default function GanttChart() {
         barG.append('rect')
           .attr('x', xScale(setupStart)).attr('y', y)
           .attr('width', Math.max(xScale(op.start) - xScale(setupStart), 0))
-          .attr('height', h).attr('fill', color).attr('opacity', 0.2).attr('rx', 4);
+          .attr('height', h).attr('fill', color).attr('opacity', Math.min(baseOpacity, 0.2)).attr('rx', 4);
       }
 
       // Main bar
       const mainBar = barG.append('rect')
         .attr('x', x).attr('y', y).attr('width', w).attr('height', h)
-        .attr('fill', color).attr('opacity', 0.85).attr('rx', 6)
+        .attr('fill', color).attr('opacity', baseOpacity).attr('rx', 6)
         .attr('cursor', 'grab').attr('stroke', 'transparent').attr('stroke-width', 2);
 
       // Label
       if (w > 50) {
+        let labelText = op.job_id.length > 14 ? op.job_id.slice(-12) : op.job_id;
+        if (workerStatus === 'completed') labelText = `[Xong] ${labelText}`;
+        else if (workerStatus === 'accepted') labelText = `[Đang chạy] ${labelText}`;
+
         barG.append('text')
           .attr('x', x + w / 2).attr('y', y + h / 2 + 1)
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
           .attr('fill', 'white').attr('font-size', 10).attr('font-weight', 600)
           .attr('pointer-events', 'none')
-          .text(op.job_id.length > 14 ? op.job_id.slice(-12) : op.job_id);
+          .text(labelText);
       }
 
       // Hover
@@ -220,15 +365,15 @@ export default function GanttChart() {
               <div>Thời gian: <b>${minuteToTime(op.start)} → ${minuteToTime(op.finish)}</b></div>
               <div>Gia công: <b>${op.finish - op.start}p</b> | Setup: <b>${op.setup}p</b></div>
               <div>Worker: <b>${op.worker_status}</b></div>
-              ${op.note ? `<div style="color:#f59e0b;margin-top:4px">⚠ ${op.note}</div>` : ''}
-              <div style="color:#64748b;margin-top:6px;font-size:10px">🖱 Kéo để di chuyển</div>
+              ${op.note ? `<div style="color:#f59e0b;margin-top:4px"> ${op.note}</div>` : ''}
+              <div style="color:#64748b;margin-top:6px;font-size:10px">Kéo để di chuyển</div>
             `);
         })
         .on('mousemove', (event: MouseEvent) => {
           tooltip.style('left', `${event.clientX + 12}px`).style('top', `${event.clientY - 10}px`);
         })
         .on('mouseleave', () => {
-          mainBar.attr('opacity', 0.85).attr('stroke', 'transparent');
+          mainBar.attr('opacity', baseOpacity).attr('stroke', 'transparent');
           tooltip.style('display', 'none');
         });
 
@@ -268,11 +413,45 @@ export default function GanttChart() {
       drag(barG as any);
     });
 
+    // ── Break blocks — drawn AFTER bars to always show on top ─────
+    const breaksG = g.append('g').attr('class', 'breaks-overlay');
+    breaksG.selectAll('rect.break-overlay').data(breakBlocks).join('rect')
+      .attr('class', 'break-overlay')
+      .attr('x', (d: { start: number; end: number; type: string }) => xScale(d.start))
+      .attr('y', 0)
+      .attr('width', (d: { start: number; end: number; type: string }) => Math.max(0, xScale(d.end) - xScale(d.start)))
+      .attr('height', chartHeight)
+      .attr('fill', (d: { start: number; end: number; type: string }) => {
+        if (d.type === 'lunch') return 'url(#lunchHatch)';
+        if (d.type === 'overtime') return 'url(#overtimeHatch)';
+        return 'url(#offHatch)';
+      })
+      .attr('opacity', 1)
+      .attr('pointer-events', 'none');
+
+    // Break labels
+    breakBlocks.forEach((b: { start: number; end: number; type: string }) => {
+      const bw = xScale(b.end) - xScale(b.start);
+      if (bw > 28) {
+        breaksG.append('text')
+          .attr('x', xScale(b.start) + bw / 2)
+          .attr('y', chartHeight / 2)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('fill', b.type === 'lunch' ? 'rgba(224, 0, 0, 0.88)' : b.type === 'overtime' ? 'rgba(245, 158, 11, 0.9)' : 'rgba(100, 116, 139, 0.8)')
+          .attr('font-size', b.type === 'lunch' ? 15 : 12)
+          .attr('font-weight', 800)
+          .attr('pointer-events', 'none')
+          .attr('transform', `rotate(-90, ${xScale(b.start) + bw / 2}, ${chartHeight / 2})`)
+          .text(b.type === 'lunch' ? 'Nghỉ trưa' : b.type === 'overtime' ? 'Tăng ca' : 'Ngoài giờ');
+      }
+    });
+
     // X-axis label
     svg.append('text')
       .attr('x', MARGIN.left + chartWidth / 2).attr('y', totalH - 5)
       .attr('text-anchor', 'middle').attr('fill', '#64748b').attr('font-size', 11)
-      .text('Thời gian (07:00 = phút 0)');
+      .text('Thời gian (07:30 = phút 0)');
 
   }, [operations, machineStatusMap, fetchData]);
 
@@ -317,8 +496,8 @@ export default function GanttChart() {
         <div className="card-header">
           <span className="card-title"> BIỂU ĐỒ KẾ HOẠCH SẢN XUẤT (GANTT)</span>
           <div className="flex-gap">
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🖱 Kéo thả để điều chỉnh</span>
-            <button className="btn btn-secondary btn-sm" onClick={fetchData}>🔄</button>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}> Kéo thả để điều chỉnh thời gian xử lí</span>
+            <button className="btn btn-secondary btn-sm" onClick={fetchData}>ResetChart</button>
           </div>
         </div>
 
@@ -330,15 +509,27 @@ export default function GanttChart() {
         <div style={{ display: 'flex', gap: 'var(--spacing-lg)', marginTop: 'var(--spacing-md)', paddingTop: 'var(--spacing-md)', borderTop: '1px solid var(--border-color)', fontSize: '0.8rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 14, height: 14, borderRadius: 4, background: '#1B5E20' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Bình thường (On)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Máy On</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 14, height: 14, borderRadius: 4, background: '#757575' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Tắt máy (Off)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Off</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 14, height: 14, borderRadius: 4, background: '#B71C1C' }} />
-            <span style={{ color: 'var(--text-secondary)' }}>Bảo trì (Maintenance)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Bảo trì</span>
+          </div>
+          <div style={{ paddingLeft: 8, borderLeft: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: '#1976D2' }} />
+            <span style={{ color: 'var(--text-secondary)' }}>Đang chạy</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(176, 190, 197, 0.4)' }} />
+            <span style={{ color: 'var(--text-secondary)' }}>Đã xong</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.5)' }} />
+            <span style={{ color: 'var(--text-secondary)' }}>Giờ tăng ca</span>
           </div>
           <div style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
             {totalJobs} đơn | {totalMachines} máy | Makespan: {makespan}p
@@ -351,9 +542,18 @@ export default function GanttChart() {
         <div className="card-header" onClick={() => setShowDetail(!showDetail)} style={{ cursor: 'pointer' }}>
           <span className="card-title">{showDetail ? '▼' : '▶'} Xem chi tiết dữ liệu</span>
           {showDetail && (
-            <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); handleDownloadCSV(); }}>
-              Tải xuống CSV
-            </button>
+            <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+              <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); handleDownloadCSV(); }}>
+                Tải xuống CSV
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ backgroundColor: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}
+                onClick={e => { e.stopPropagation(); handleClearData(); }}
+              >
+                Xóa CSDL (Test)
+              </button>
+            </div>
           )}
         </div>
 

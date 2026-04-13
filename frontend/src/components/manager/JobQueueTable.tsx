@@ -11,6 +11,7 @@ interface Job {
   detail_len_mm: number | null;
   complexity: number;
   quantity: number;
+  manual_setup_time: number | null;
   operations: string | string[] | null;
   process: string | null;
   process_machine: string | null;
@@ -53,21 +54,6 @@ export default function JobQueueTable() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Map operations list to machine IDs string (matching original Streamlit)
-  const mapOpsToMachines = (ops: any): string => {
-    if (!ops) return '';
-    let opsList: string[] = [];
-    if (typeof ops === 'string') {
-      try { opsList = JSON.parse(ops); } catch { opsList = ops.split(' '); }
-    } else if (Array.isArray(ops)) {
-      opsList = ops;
-    }
-    return opsList.map(cap => {
-      const machines = capMapping[cap];
-      return machines ? machines.join(' / ') : cap;
-    }).join(' -> ');
-  };
-
   // Edit a cell
   const handleEdit = (jobId: string, field: string, value: any) => {
     setEditedJobs(prev => ({
@@ -92,6 +78,7 @@ export default function JobQueueTable() {
       await updateJob(jobId, edits);
       showToast(`Đã lưu ${jobId}`);
       fetchData();
+      window.dispatchEvent(new Event('jobs-updated'));
     } catch (e: any) { showToast(` ${e.message}`); }
   };
 
@@ -102,6 +89,7 @@ export default function JobQueueTable() {
       await deleteJob(jobId);
       showToast(`Đã xóa ${jobId}`);
       fetchData();
+      window.dispatchEvent(new Event('jobs-updated'));
     } catch (e: any) { showToast(` ${e.message}`); }
   };
 
@@ -137,9 +125,10 @@ export default function JobQueueTable() {
                 <th>Vật liệu</th>
                 <th>Kích thước (mm)</th>
                 <th>Chi tiết (mm)</th>
+                <th>Setup (p)</th>
                 <th>Complexity</th>
                 <th>Quy trình</th>
-                <th>Máy gia công</th>
+                <th>Deadline</th>
                 <th style={{ width: 90 }}>Thao tác</th>
               </tr>
             </thead>
@@ -181,14 +170,21 @@ export default function JobQueueTable() {
                         value={Number(getValue(job, 'detail_len_mm') || 0)}
                         onChange={e => handleEdit(job.id, 'detail_len_mm', parseFloat(e.target.value))} />
                     </td>
+                    <td>
+                      <input className="cell-input" type="number" style={{ width: 60 }} placeholder="Auto"
+                        value={getValue(job, 'manual_setup_time') !== null && getValue(job, 'manual_setup_time') !== undefined ? Number(getValue(job, 'manual_setup_time')) : ''}
+                        onChange={e => handleEdit(job.id, 'manual_setup_time', e.target.value ? parseInt(e.target.value) : null)} />
+                    </td>
                     <td style={{ textAlign: 'center' }}>
                       {(job.complexity || 0).toFixed(2)}
                     </td>
                     <td style={{ fontSize: '0.75rem' }}>
                       {job.process || '-'}
                     </td>
-                    <td style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                      {mapOpsToMachines(job.operations)}
+                    <td>
+                      <input className="cell-input" type="datetime-local" style={{ width: 140, fontSize: '0.75rem', padding: '2px 4px' }}
+                        value={String(getValue(job, 'due_date') || '').slice(0, 16)}
+                        onChange={e => handleEdit(job.id, 'due_date', e.target.value ? new Date(e.target.value).toISOString() : null)} />
                     </td>
                     <td>
                       <div className="flex-gap" style={{ gap: 4 }}>

@@ -61,7 +61,7 @@ export default function DXFUploader() {
   const today = new Date();
   const tomorrow = new Date(today.getTime() + 86400000);
   const [startDate, setStartDate] = useState(today.toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState('07:00');
+  const [startTime, setStartTime] = useState('07:30');
   const [dueDate, setDueDate] = useState(tomorrow.toISOString().slice(0, 10));
   const [dueTime, setDueTime] = useState('17:00');
 

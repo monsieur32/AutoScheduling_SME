@@ -12,6 +12,7 @@ class ScheduleRunRequest(BaseModel):
     use_ml: bool = True
     initial_machine_avail: Optional[Dict[str, int]] = None
     initial_machine_last_job: Optional[Dict[str, Optional[str]]] = None
+    overtime_config: Optional[Dict[str, Any]] = None  # e.g. {"enabled": True, "end_time_mins": 1110}
 
 
 class ScheduleSelectRequest(BaseModel):
@@ -79,3 +80,4 @@ class ScheduleRunResponse(BaseModel):
     schedule: List[OperationResponse]
     version: int
     total_operations: int
+    overtime_config: Optional[Dict[str, Any]] = None

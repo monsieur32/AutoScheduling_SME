@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { listMachines, getMachineJobs, updateMachineStatus, completeJob, deleteJob, reschedule, getScheduleStatus } from '../api/httpClient';
+import { listMachines, getMachineJobs, updateMachineStatus, completeJob, reschedule, getScheduleStatus, acceptJob, pauseJob } from '../api/httpClient';
 import ThemeToggle from '../components/ThemeToggle';
 
 interface MachineInfo { id: string; name: string; machine_type: string; status: string; }
@@ -71,13 +71,28 @@ export default function WorkerStation() {
     if (m) setNewStatus(m.status);
   };
 
-  // Handle "Hoàn Thành" — delete from both schedule and queue
+  // Handle "Hoàn Thành"
   const handleComplete = async (job: MachineJob) => {
     try {
       await completeJob(job.job_id, selectedMachine || undefined);
-      // Also delete from job queue
-      try { await deleteJob(job.job_id); } catch { /* may not exist */ }
       showToast(`Máy ${selectedMachine} đã hoàn thành ${job.job_id}!`);
+      fetchMachineJobs();
+    } catch (e: any) { showToast(`${e.message}`); }
+  };
+
+  const handleStart = async (job: MachineJob) => {
+    try {
+      await acceptJob(job.job_id, selectedMachine || undefined);
+      showToast(`Máy ${selectedMachine} đang chạy ${job.job_id}`);
+      fetchMachineJobs();
+    } catch (e: any) { showToast(`${e.message}`); }
+  };
+
+  const handleUndo = async (job: MachineJob) => {
+    try {
+      await pauseJob(job.job_id, selectedMachine || undefined);
+      // Backend sets to "paused", which treats as pending in our UI.
+      showToast(`Đã hoàn tác ${job.job_id}`);
       fetchMachineJobs();
     } catch (e: any) { showToast(`${e.message}`); }
   };
@@ -230,60 +245,85 @@ export default function WorkerStation() {
             </div>
           ) : (
             <div style={{ marginTop: 'var(--spacing-md)' }}>
-              {machineJobs.map((job, idx) => {
-                const startStr = minuteToTime(job.start);
-                const endStr = minuteToTime(job.finish);
-                const duration = job.finish - job.start;
-                const isFirst = idx === 0;
+              {(() => {
+                const inProgressJobs = machineJobs.filter(j => j.worker_status === 'accepted');
+                const pendingJobs = machineJobs.filter(j => j.worker_status !== 'accepted' && j.worker_status !== 'completed');
+                const completedJobs = machineJobs.filter(j => j.worker_status === 'completed');
 
-                return (
-                  <div key={job.id} className="card" style={{
-                    marginBottom: 'var(--spacing-sm)',
-                    borderLeft: `4px solid ${isFirst ? 'var(--accent-blue)' : 'var(--border-color)'}`,
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr 1fr', gap: 'var(--spacing-md)', alignItems: 'center' }}>
-                      {/* Col 1: Job ID + Status */}
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{job.job_id}</div>
-                        <div style={{ fontSize: '0.75rem', color: isFirst ? 'var(--accent-blue-light)' : 'var(--text-muted)', marginTop: 4 }}>
-                          {isFirst ? '(Đang thực thi)' : '(Đang chờ)'}
-                        </div>
-                      </div>
+                const renderJobCard = (job: MachineJob, cardType: 'pending' | 'in_progress' | 'completed') => {
+                  const startStr = minuteToTime(job.start);
+                  const endStr = minuteToTime(job.finish);
+                  const duration = job.finish - job.start;
+                  
+                  let lbl = "Đang chờ";
+                  if (cardType === 'in_progress') lbl = "Đang thực thi";
+                  else if (cardType === 'completed') lbl = "Đã hoàn thành";
 
-                      {/* Col 2: Time + Progress */}
-                      <div>
-                        <div style={{ fontSize: '0.85rem' }}>
-                          ⏱ {startStr} — {endStr} ({duration} phút)
-                        </div>
-                        {isFirst && (
-                          <div className="progress-bar" style={{ marginTop: 6, height: 6 }}>
-                            <div className="progress-fill" style={{ width: '40%' }} />
+                  return (
+                    <div key={job.id} className="card" style={{
+                      marginBottom: 'var(--spacing-sm)',
+                      borderLeft: `4px solid ${cardType === 'in_progress' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                      opacity: cardType === 'completed' ? 0.6 : 1
+                    }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr 1fr', gap: 'var(--spacing-md)', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{job.job_id}</div>
+                          <div style={{ fontSize: '0.75rem', color: cardType === 'in_progress' ? 'var(--accent-blue-light)' : 'var(--text-muted)', marginTop: 4 }}>
+                            ({lbl})
                           </div>
-                        )}
-                      </div>
+                        </div>
 
-                      {/* Col 3: Note/Mode */}
-                      <div>
-                        {job.note === 'Expert Intervention' ? (
-                          <span className="badge badge-warning" style={{ padding: '4px 10px' }}>Chạy chế độ an toàn</span>
-                        ) : (
-                          <span className="badge badge-info" style={{ padding: '4px 10px' }}>Chế độ tiêu chuẩn</span>
-                        )}
-                      </div>
+                        <div>
+                          <div style={{ fontSize: '0.85rem' }}>
+                            ⏱ {startStr} — {endStr} ({duration} phút)
+                          </div>
+                          {cardType === 'in_progress' && (
+                            <div className="progress-bar" style={{ marginTop: 6, height: 6 }}>
+                              <div className="progress-fill" style={{ width: '40%' }} />
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Col 4: Complete button */}
-                      <div style={{ textAlign: 'right' }}>
-                        <button
-                          className={`btn ${isFirst ? 'btn-primary' : 'btn-secondary'}`}
-                          onClick={() => handleComplete(job)}
-                        >
-                          Hoàn Thành
-                        </button>
+                        <div>
+                          {job.note === 'Expert Intervention' ? (
+                            <span className="badge badge-warning" style={{ padding: '4px 10px' }}>Chạy an toàn</span>
+                          ) : (
+                            <span className="badge badge-info" style={{ padding: '4px 10px' }}>Tiêu chuẩn</span>
+                          )}
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          {cardType === 'pending' && (
+                            <button className="btn btn-primary" onClick={() => handleStart(job)}>Bắt Đầu</button>
+                          )}
+                          {cardType === 'in_progress' && (
+                            <button className="btn btn-primary" onClick={() => handleComplete(job)}>Hoàn Thành</button>
+                          )}
+                          {cardType === 'completed' && (
+                            <button className="btn btn-secondary" onClick={() => handleUndo(job)}>Hoàn Tác</button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  );
+                };
+
+                return (
+                  <>
+                    <h5 style={{ marginTop: 'var(--spacing-md)', marginBottom: 'var(--spacing-sm)', color: 'var(--accent-blue)' }}>[ĐANG THỰC THI]</h5>
+                    {!inProgressJobs.length && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Không có công việc nào đang chạy.</p>}
+                    {inProgressJobs.map(j => renderJobCard(j, 'in_progress'))}
+
+                    <h5 style={{ marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-sm)' }}>[HÀNG ĐỢI]</h5>
+                    {!pendingJobs.length && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Không có công việc trong hàng đợi.</p>}
+                    {pendingJobs.map(j => renderJobCard(j, 'pending'))}
+
+                    <h5 style={{ marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-sm)', color: 'var(--text-muted)' }}>[LỊCH SỬ - ĐÃ HOÀN THÀNH]</h5>
+                    {!completedJobs.length && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Chưa có công việc nào hoàn thành.</p>}
+                    {completedJobs.map(j => renderJobCard(j, 'completed'))}
+                  </>
                 );
-              })}
+              })()}
             </div>
           )}
         </div>

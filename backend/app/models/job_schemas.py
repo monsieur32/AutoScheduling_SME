@@ -21,6 +21,7 @@ class JobCreate(BaseModel):
     detail_len_mm: Optional[float] = None
     complexity: float = 0.0
     quantity: int = 1
+    manual_setup_time: Optional[int] = None
     operations: Optional[List[str]] = None
     process: Optional[str] = None
     process_machine: Optional[str] = None
@@ -39,6 +40,7 @@ class JobUpdate(BaseModel):
     detail_len_mm: Optional[float] = None
     complexity: Optional[float] = None
     quantity: Optional[int] = None
+    manual_setup_time: Optional[int] = None
     process: Optional[str] = None
     process_machine: Optional[str] = None
     start_time: Optional[datetime] = None
@@ -64,6 +66,7 @@ class JobResponse(BaseModel):
     detail_len_mm: Optional[float] = None
     complexity: float
     quantity: int
+    manual_setup_time: Optional[int] = None
     operations: Optional[List[str]] = None
     process: Optional[str] = None
     process_machine: Optional[str] = None
@@ -71,7 +74,7 @@ class JobResponse(BaseModel):
     due_date: Optional[datetime] = None
     priority: str
     status: str
-    created_at: Optional[datetime] = None
+    created_at: datetime
 
     class Config:
         from_attributes = True
